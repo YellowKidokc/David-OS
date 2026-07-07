@@ -1,0 +1,10 @@
+{
+  "bucket_id": "claude-private",
+  "label": "Claude Private",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["claude"],
+  "vector_namespace": "claude-private",
+  "requires_approval_to_share": true
+}
+

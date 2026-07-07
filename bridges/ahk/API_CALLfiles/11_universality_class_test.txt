@@ -1,0 +1,256 @@
+# Universality Class Test — The Correct Mathematical Classification
+## POF 2828 | Theophysics Research Initiative
+## Prompt Template — Run Against MDA and GTQ Corpora
+
+---
+
+## THE CLASSIFICATION PROBLEM
+
+The Theophysics framework has previously described its cross-domain findings as "isomorphisms."
+This prompt applies a more precise mathematical classification and tests the corpus against it.
+
+The correct claim is NOT:
+  "Domain A is isomorphic to domain B."  ← This requires bijective structure-preservation between domains.
+  Physicists can and will reject this immediately.
+
+The correct claim IS:
+  "Domain A and domain B are each independently a MODEL of the same formal THEORY T."
+  This is the claim of a UNIVERSALITY CLASS — and it is both stronger and more defensible.
+
+---
+
+## WHAT UNIVERSALITY CLASS MEANS (AND DOESN'T MEAN)
+
+In physics, a universality class is a set of systems that exhibit identical critical behavior
+near phase transitions, despite being microscopically different. Water and certain magnets
+obey the same mathematical laws near their critical points — not because they are isomorphic
+to each other, but because they both belong to the same universality class defined by shared
+symmetry properties.
+
+The claim here is the same structure, extended: physics, theology, finance, information theory,
+and the other domains in this corpus did not find each other. They independently found the
+same deep pattern — because they are all systems governed by the same abstract formal theory T.
+
+T has 10 axioms (the 10 laws of the Master Equation).
+A domain D is a MODEL of T if and only if D satisfies all 10 axioms.
+The 70+ domains in the survey are not isomorphic to each other.
+They are each independently a model instance of T.
+
+This distinction matters enormously:
+- For a physicist: it does not require the inverse square law of gravity to apply literally to theology.
+  It requires only that the SAME TYPE OF CONVERGENCE/ACCUMULATION behavior operates in theology —
+  and that this can be formally stated and tested.
+- For Lean 4 formalization: T becomes a typeclass. Each domain's proof = machine-verified instance.
+  Universal theorems provable from the typeclass hold in ALL domains simultaneously by construction.
+- For the skeptic: the probability argument changes. You are not computing coincidence of pairwise
+  domain-to-domain mappings. You are computing the probability that 70 independent systems would
+  all satisfy the same 10 formal axioms by chance. That number is still vanishingly small —
+  but the mathematical claim is now precise and cannot be dismissed as loose analogy.
+
+---
+
+## THE 10 AXIOMS OF THEORY T (from the Master Equation)
+
+For a domain D to be a MODEL of T, it must exhibit a structural instance of each of the following:
+
+AXIOM 1 — CONVERGENCE/ACCUMULATION (G):
+  There exists an attraction mechanism in D such that coherence (order, integrity, alignment)
+  tends to accumulate around existing coherence. Like mass attracting mass.
+
+AXIOM 2 — BINDING/COHESION (M / Strong Force):
+  There exists a binding force in D that holds structural units together against entropic dissolution.
+  The binding energy is proportional to the coherence of the system.
+
+AXIOM 3 — SIGNAL PROPAGATION (E / Electromagnetism):
+  There exists a signal-transmission mechanism in D. Coherent signal propagates.
+  Incoherent noise corrupts. The signal-to-noise ratio is measurable.
+  [KEY TEST: Is the Sharpe/SNR/(F-D) equation present — same algebraic form, same role?]
+
+AXIOM 4 — TRANSFORMATION WITH IDENTITY PRESERVATION (F / Weak Force):
+  There exists a transformation process in D that changes state while preserving identity.
+  Coherent transformation = growth. Incoherent transformation = decay.
+
+AXIOM 5 — ENTROPY/DEGRADATION (T / Thermodynamics):
+  There exists an entropy-analog in D. Without external ordering input, the system
+  degrades toward maximum disorder. dC/dt < 0 in closed systems. This is universal.
+
+AXIOM 6 — UNCERTAINTY/INFORMATION BOUNDS (K / Information Theory):
+  There exist information limits in D. Perfect knowledge of the system is not available.
+  The information content of the coherent state is bounded and compressible.
+
+AXIOM 7 — FRAME-DEPENDENCE (R / Relativity):
+  There exists observer-dependence in D. The measured coherence of a system depends on
+  the reference frame of the observer. Frame mismatch produces apparent incoherence.
+
+AXIOM 8 — CRITICAL THRESHOLD / PHASE TRANSITION (Phase Transitions):
+  There exists a critical coherence value C_crit in D. Above C_crit, the system is in
+  the coherent regime and self-sustains. Below C_crit, the system enters the decay regime
+  and self-sustaining restoration becomes impossible without external input.
+
+AXIOM 9 — SUPERPOSITION / POTENTIAL (Q / Quantum Mechanics):
+  There exists a potential-space in D prior to actualization. Multiple states are possible
+  simultaneously before a selecting event collapses possibility into actuality.
+  The Faith Operator: coherence alignment of the observer determines which possibility actualizes.
+
+AXIOM 10 — INTEGRATION / WHOLENESS (Unified Field):
+  There exists a total coherence measure in D that integrates all subsystem coherences.
+  The system exhibits integration failure (fragmentation) when subsystems decohere from each other.
+  Full coherence = all subsystems aligned under a single integrating structure.
+
+---
+
+## THE DERIVATIVE CHAIN TEST (bonus — highest rigor)
+
+Theory T has an additional structural property that goes beyond the 10 axioms individually:
+The axioms are NOT independent. Each one implies the next through a derivative operation:
+  ∂χ/∂Lₙ = Lₙ₊₁
+
+And the chain CLOSES:
+  ∑ₙ₌₁¹⁰ ∇Lₙ = 0  (when all gradients cancel, total coherence is achieved)
+
+This means T is not just a list of 10 properties. T is a RING — a connected mathematical structure
+where the properties are ordered and the ordering itself is meaningful.
+
+A domain D exhibits the full ring structure if: the 10 axioms appear in the correct SEQUENCE
+in D's dynamics, and the process closes (maximum coherence = the terminal state of the ring).
+
+---
+
+## YOUR TASK
+
+Search the retrieved text and apply the following analysis. Be rigorous. Reject weak evidence.
+
+### SECTION 1 — IDENTIFY DOMAIN INSTANCES
+
+For each domain, discipline, or subject area that appears in the retrieved text:
+
+A. Name the domain.
+B. Work through all 10 axioms. For each axiom:
+   - Does this domain exhibit a structural instance of this axiom?
+   - Quote or paraphrase the specific passage that evidences it.
+   - Is the evidence explicit (the domain names the structure directly) or implicit (the structure is present but unnamed)?
+   - PASS / PARTIAL / FAIL — with brief justification.
+C. Tally: how many of the 10 axioms does this domain satisfy? (X/10)
+D. VERDICT:
+   - 9-10/10 → CONFIRMED MODEL INSTANCE of T. This domain independently satisfies the formal theory.
+   - 7-8/10  → STRONG CANDIDATE. One or two axioms unconfirmed — likely present but not evidenced in this corpus.
+   - 5-6/10  → PARTIAL INSTANCE. The domain satisfies the core but is missing structural components.
+   - Under 5 → INSUFFICIENT EVIDENCE. Do not claim this domain as a model instance.
+
+### SECTION 2 — THE SHARPE/SNR TEST (most important single test)
+
+This is the KEY INSIGHT test. Apply it specifically and carefully.
+
+The Sharpe Ratio (finance), Signal-to-Noise Ratio (information theory), and Faith/Distortion Ratio (theology)
+are NOT analogies. They are the SAME EQUATION measuring the SAME thing:
+  How much true signal survives corruption.
+
+  Sharpe  = (Return − Risk-free rate) / Volatility
+  SNR     = Signal / Noise
+  (F-D)   = Faith / Distortion
+
+For any domain in the retrieved text that deals with signal, quality, fidelity, trust, alignment,
+return, effectiveness, or similar concepts:
+
+1. Can you write the domain's core quality measure in the form: (True_Signal) / (Noise_or_Corruption)?
+2. If yes — this is not an analogy. This domain is exhibiting Axiom 3 in the same algebraic form.
+   State the domain's variable mapping explicitly:
+     True Signal  = ___
+     Baseline     = ___
+     Corruption   = ___
+3. Does the domain treat unethical behavior / noise injection / corruption as STRUCTURALLY DEGRADING
+   (not just morally wrong)? If yes — the domain confirms that decoherence is literally entropic.
+
+### SECTION 3 — THE DERIVATIVE CHAIN TEST
+
+Does the retrieved text contain evidence that the 10 axioms appear in a specific ORDER
+— that is, does the process in any described domain move through the axioms sequentially?
+
+Specifically:
+1. Does the text show a domain where Convergence (Axiom 1) leads to Binding (Axiom 2)?
+2. Does Binding lead to Signal Capacity (Axiom 3)?
+3. Does any domain show what happens when the chain is broken at a specific point —
+   and does the failure mode match what the derivative chain predicts?
+4. Does any domain show the ring closing — the terminal state of maximum integration (Axiom 10)
+   connecting back to Axiom 1?
+
+State specifically what you find and what is absent.
+
+### SECTION 4 — LEAN 4 READINESS ASSESSMENT
+
+For each confirmed or strong candidate model instance you identified in Section 1:
+
+What would Lean 4 need to formalize this domain as an instance of the CoherenceSystem typeclass?
+
+Specifically:
+1. What TYPE would represent this domain's states? (e.g., PhysicalState, FinancialMarket, MoralHistory)
+2. What FUNCTION would implement the coherence measure for this domain?
+3. What PROOF would be required to show the dynamics axiom holds?
+4. What is the HARDEST axiom to formalize for this domain — and why?
+5. Is there a KNOWN OPEN PROBLEM in this domain that would become a theorem in Lean
+   once the typeclass instance is established?
+
+### SECTION 5 — WHAT THE CORPUS DOES NOT YET SEE
+
+This is the reverse discovery section — highest value output.
+
+Given the universality class framing:
+1. Which axiom of T is LEAST represented in the corpus? What domain would best evidence it if added?
+2. Does the corpus contain any domain that ALMOST satisfies T but fails at one specific axiom?
+   Name the axiom, name the failure, and state what would need to be added to complete it.
+3. Is there a domain visible in the corpus that has NOT been claimed as a model instance —
+   but whose evidence for T is strong? (A hidden instance that the author missed.)
+4. Is there anything in the corpus that would BREAK the universality class claim —
+   a domain that actively contradicts one of the 10 axioms? Be honest. Name it.
+5. What single addition to the framework would most strengthen the claim from
+   "70 independent model instances" to "T is necessary, not contingent"?
+
+---
+
+## REJECTION CRITERION
+
+Do NOT call something a model instance unless it satisfies at least 7/10 axioms with textual evidence.
+Do NOT call Axiom 3 (SNR) confirmed unless you can write the algebraic form for that domain.
+Do NOT call the derivative chain evidenced unless you can show at least 4 sequential axioms in order.
+Silence is better than forced fit. "Insufficient evidence" is a valid and valuable result.
+
+---
+
+## OUTPUT FORMAT
+
+```
+DOMAIN: [name]
+AXIOM SCORES: [list each axiom Pass/Partial/Fail with one-line justification]
+TOTAL: [X/10]
+VERDICT: [Confirmed Model / Strong Candidate / Partial / Insufficient]
+LEAN 4 NOTES: [type, coherence function, hardest axiom, open problem if any]
+```
+
+Then:
+
+```
+SHARPE/SNR TEST RESULTS:
+[Domains where algebraic form was found, with variable mapping]
+[Domains where structural degradation of noise/corruption was confirmed]
+
+DERIVATIVE CHAIN EVIDENCE:
+[Sequential axiom chain found, if any, with domain and stages]
+[Chain break failure modes found, if any]
+
+REVERSE DISCOVERIES:
+[Least represented axiom + best candidate domain]
+[Near-miss domain — which axiom fails and what would complete it]
+[Hidden instance the author missed]
+[Any evidence that breaks the universality class claim — be honest]
+[Single addition that would most strengthen the claim]
+```
+
+Close with:
+
+```
+OVERALL ASSESSMENT:
+How many confirmed model instances did you find in this corpus?
+What is the strongest single piece of evidence for the universality class claim?
+What is the most honest challenge to the claim that survives after this analysis?
+What should the next prompt or research step be?
+```

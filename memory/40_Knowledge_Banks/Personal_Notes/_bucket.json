@@ -1,0 +1,10 @@
+{
+  "bucket_id": "bank-personal-notes",
+  "label": "Personal Notes Knowledge Bank",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["operator", "codex"],
+  "vector_namespace": "bank-personal-notes",
+  "requires_approval_to_share": true
+}
+

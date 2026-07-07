@@ -1,1 +1,0 @@
-"""Centralized hub configuration."""

@@ -1,0 +1,10 @@
+{
+  "bucket_id": "kimi-private",
+  "label": "Kimi Private",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["kimi"],
+  "vector_namespace": "kimi-private",
+  "requires_approval_to_share": true
+}
+

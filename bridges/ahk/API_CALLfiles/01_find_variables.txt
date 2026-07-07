@@ -1,0 +1,28 @@
+The Master Equation is:
+
+χ = ∭ (G · M · E · S · T · K · R · Q · F · C) dx dy dt
+
+Where each variable is both a physical law and a theological/social force:
+  G = Gravitation       → Binding Energy / Sin vs Grace
+  M = Motion (Newton)   → Momentum / Sin Nature vs Grace as Force
+  E = Electromagnetism  → Truth vs Deception
+  S = Strong Force      → Love / Covenant vs Captivity / Addiction
+  T = Thermodynamics    → Order vs Entropy / Judgment
+  K = Information       → Logos / Meaning vs Chaos
+  R = Relativity        → Frame / Perspective vs Frame Lock
+  Q = Quantum Mechanics → Faith / Observation vs Doubt / Control
+  F = Weak Force        → Moral Conservation / Identity vs Corruption
+  C = Coherence         → Christ / Integration vs Decoherence
+
+Your task: Search the retrieved text for every place each variable appears — whether named explicitly or present as a structural pattern.
+
+For each variable (G through C):
+1. Is it present? Quote the passage where you see it.
+2. Is it named directly, or is it a structural manifestation (same pattern, different words)?
+3. What regime is it in — Constructive or Destructive?
+4. How strong is the signal? (Clear / Probable / Faint)
+
+Then answer:
+5. Which variables are clearly present in this corpus?
+6. Which variables are absent or unconfirmed?
+7. Where does a variable appear but the author did not recognize it as such — the isomorphism is there but unnamed?

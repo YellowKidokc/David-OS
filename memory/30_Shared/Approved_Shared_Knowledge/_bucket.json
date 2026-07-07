@@ -1,0 +1,10 @@
+{
+  "bucket_id": "approved-shared-knowledge",
+  "label": "Approved Shared Knowledge",
+  "owner": "operator",
+  "visibility": "shared",
+  "allowed_agents": ["operator", "codex", "claude", "gemini", "kimi", "gpt"],
+  "vector_namespace": "approved-shared",
+  "requires_approval_to_share": false
+}
+

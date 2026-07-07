@@ -1,0 +1,10 @@
+{
+  "bucket_id": "system-audit-logs",
+  "label": "System Audit Logs",
+  "owner": "operator",
+  "visibility": "system",
+  "allowed_agents": ["operator", "codex"],
+  "vector_namespace": "system-audit-logs",
+  "requires_approval_to_share": true
+}
+

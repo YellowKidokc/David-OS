@@ -1,0 +1,10 @@
+{
+  "bucket_id": "gemini-private",
+  "label": "Gemini Private",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["gemini"],
+  "vector_namespace": "gemini-private",
+  "requires_approval_to_share": true
+}
+

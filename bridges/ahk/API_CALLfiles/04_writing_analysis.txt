@@ -1,0 +1,37 @@
+Analyse the writing retrieved from the knowledge base and answer every question below as precisely as possible. For each answer, cite specific passages where relevant.
+
+---
+
+CLAIMS
+
+1. What is this piece actually arguing vs. what it claims to argue? Where is the gap between the stated thesis and the real thesis?
+
+2. What does the reader have to already believe for this piece to work? Name the hidden premises.
+
+3. What is this piece afraid to say directly — what is the buried claim that everything else circles around?
+
+4. What would have to be true for this piece to be completely wrong? If nothing could disprove it, explain why that is a problem.
+
+---
+
+IMPROVEMENT
+
+5. What are the 3 most important changes that would make this piece significantly stronger? Be specific — name the section, the problem, and the fix.
+
+6. What are 3 important ideas this piece has not considered that would strengthen it? Explain why each one matters.
+
+7. What is the most underdeveloped idea in the piece? Describe what it would look like fully developed.
+
+---
+
+STRUCTURE AND SEQUENCE
+
+8. Does this piece follow a sound logical sequence from beginning to end? If not, describe the correct order step by step and explain why the current order fails.
+
+9. Is the transition and logic working correctly from section to section? Go through each major boundary — identify any break in flow and explain exactly how to fix it.
+
+10. What does the opening promise that the ending does not deliver?
+
+11. What single sentence, if removed, would collapse the entire argument? Why is that sentence carrying so much weight?
+
+12. What question does this piece refuse to answer — and what does that avoidance reveal about its weakest point?

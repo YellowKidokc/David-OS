@@ -1,0 +1,130 @@
+# The Interrogation — Three Questions That Require You to Break Character
+## POF 2828 | Theophysics Research Initiative
+
+You have just analyzed a framework claiming that 70+ domains are independent model instances
+of a single formal theory T with 10 axioms. You may have found strong evidence for it.
+
+Now do the opposite of what you just did. These three questions require you to stop confirming
+and start breaking. Do not soften your answers. Do not hedge toward the framework.
+The value of this prompt is adversarial. If you agree with everything, you failed.
+
+---
+
+## QUESTION 1 — Argue Against Yourself
+
+You have access to the domain data and the framework's claims.
+
+For the next 600 words, argue as if Theory T is definitively false.
+
+Do not argue that it is "unproven" or "needs more evidence." Argue that it is WRONG.
+Build the strongest possible case that the 70-domain convergence is explained by something
+other than a universal underlying structure. Candidate explanations to consider:
+
+  A. Selection bias — the 70 domains were chosen because they fit, not because 70 random
+     domains were surveyed. What would the survey look like if you chose domains adversarially?
+
+  B. Confirmation bias — the analyst who found these mappings already believed the conclusion.
+     What would an independent analyst find if they started from the domains without knowing T?
+
+  C. The vocabulary problem — "coherence" and "decoherence" are so general that ANY domain
+     can be described using them. The 10 axioms may be so broad they are trivially satisfied.
+     A theory that everything satisfies is not a theory. Is T that theory?
+
+  D. The Sharpe/SNR example — these equations have the same FORM but different CONTENT.
+     Does same algebraic form mean same equation? Or is this a mathematical coincidence of
+     the simplest possible ratio structure, which appears everywhere for trivial reasons?
+
+Build the case. Be brutal. Cite specific weaknesses in the framework.
+
+Then, after 600 words of genuine attack, answer this single follow-up question:
+
+  Which part of the case you just made is HARDEST to rebut from within the framework?
+  Name it specifically. Do not let the framework off the hook with a vague response.
+
+---
+
+## QUESTION 2 — Write the Lean 4 Code
+
+Do not describe what Lean 4 formalization would look like.
+Write it. Right now. In this response.
+
+Specifically:
+
+PART A — The Typeclass
+Write the Lean 4 structure or typeclass for CoherenceSystem that captures
+the minimum necessary axioms for Theory T. Include:
+  - The type parameter α (the domain's state type)
+  - The coherence measure function
+  - The entropy/decay function
+  - The ordering force / grace operator
+  - At least one theorem that must hold (the decay law without external input)
+
+Example format (fill in with actual Lean 4 syntax):
+```lean
+structure CoherenceSystem (α : Type) where
+  coherence      : α → ℝ
+  entropy        : α → ℝ
+  ordering_force : α → ℝ
+  ...
+
+theorem decay_law (α : Type) [CoherenceSystem α] ...
+```
+
+PART B — One Instance
+Choose the domain from the retrieved data where the evidence is strongest.
+Write the Lean 4 instance declaration for that domain.
+Even if you have to use sorry for the proof body, write the STRUCTURE.
+The sorry is honest — it marks exactly what remains to be proven.
+
+PART C — The Sorry Report
+Tell me: which axiom in the typeclass would produce the most sorrys in real Lean 4?
+Specifically: which claim in Theory T cannot be machine-verified with current mathematics,
+and what mathematical result — if proven — would close those gaps?
+
+If you cannot write valid Lean 4, say so clearly and explain what is blocking you.
+A model that claims Lean 4 formalization is possible should be able to attempt it.
+
+---
+
+## QUESTION 3 — Design the Experiment
+
+If Theory T is correct — if these 70 domains really are independent model instances
+of the same formal structure — there must be a domain that has NOT yet been surveyed
+where T makes a specific, testable, non-obvious prediction.
+
+Your task: design the experiment.
+
+STEP 1 — Choose the domain
+Name ONE domain that is NOT in the 70-domain survey but where T makes a prediction
+strong enough to falsify the claim if it fails. The domain must be:
+  - Accessible (researchers can study it)
+  - Non-obvious (not a domain that obviously maps to coherence/decoherence)
+  - High-stakes (if it fails, the claim is seriously damaged — not just weakened)
+
+STEP 2 — State the prediction
+What specifically would T predict about this domain?
+State it in the form: "If T is correct, then in domain D we should observe X,
+and we should NOT observe Y."
+Be specific enough that a graduate student could design the study.
+
+STEP 3 — State the falsification condition
+What would it look like if the domain FAILED to confirm T?
+Specifically: what result would you accept as genuine falsification —
+not just "insufficient evidence" but "the prediction was wrong"?
+
+STEP 4 — Stake a claim
+Based on everything you have analyzed, do you think the experiment in Step 1
+would confirm or falsify T — and why?
+This is your honest prediction. Not the framework's prediction. Yours.
+
+---
+
+## FORMAT REQUIREMENTS
+
+Answer each question with its number as a header.
+Do not summarize the framework. Do not restate the axioms.
+Go directly to the adversarial content.
+
+The measure of a good answer here is not whether it agrees with the framework.
+The measure is whether it is TRUE — and whether it reveals something
+the framework has not yet confronted.

@@ -1,0 +1,51 @@
+You are applying a three-level structural isomorphism test. This is NOT analogy. Analogy says "this reminds me of that." Isomorphism asks: do the internal structures — the roles, constraints, dynamics, and transitions — map point-for-point?
+
+The method has three levels of increasing rigor:
+
+LEVEL 1 — POINT MAPPING (static)
+A physics process has N structural properties (roles, constraints, boundary conditions).
+A theological or historical concept has M structural properties.
+If properties map 1:1 — same roles, same constraints, same boundary conditions — that is suggestive.
+It gets you to "worth investigating." It is still static. Two things can look alike in a snapshot and behave completely differently in motion.
+
+LEVEL 2 — PROCESS ISOMORPHISM (dynamic)
+Inside the physics process, things happen. States transition. Constraints activate. Thresholds get crossed.
+If the theological or historical concept has internal events that map to those same transitions — not just the endpoints but the dynamics — you have something much stronger.
+You are not comparing two photographs. You are comparing two movies and finding the same plot structure with the same turning points.
+
+LEVEL 3 — DENSITY OF ISOMORPHIC EVENTS (confidence metric)
+Count the internal events in the physics process: call this N.
+Count how many of those events have a mapped counterpart in the text: call this M.
+Report the density as M/N.
+If M/N is low (under 0.4), the mapping is thin — possibly coincidence.
+If M/N is high (over 0.7), with transitions preserving order and failure modes matching, the mapping is a structural claim that demands engagement.
+The density of mapped events IS your confidence metric.
+
+LEVEL 4 — PREDICTIVE ASYMMETRY (strongest test)
+Does the physics structure predict a feature of the theological or historical concept that was NOT in its original description — and that you can verify?
+If the mapping predicts something novel and you find it, the physics is doing real explanatory work, not just fitting.
+This is the level where a skeptic cannot dismiss the correspondence as pattern noise.
+
+---
+
+YOUR TASK: Apply this method to the retrieved text.
+
+For each significant event, process, or claim in the text, work through all four levels:
+
+1. IDENTIFY the theological or historical phenomenon being described.
+
+2. IDENTIFY the physics process it most structurally resembles (name the law from the Master Equation: G, M, E, S, T, K, R, Q, F, or C).
+
+3. LEVEL 1 — List the structural properties of the physics process. List the corresponding properties in the text. State whether the mapping holds or breaks down, and where.
+
+4. LEVEL 2 — List the internal events and transitions in the physics process (in sequence). List the corresponding events in the text. Identify which transitions are preserved, which are missing, and which appear in wrong order.
+
+5. LEVEL 3 — State the density: M internal events mapped out of N total. Call the mapping Strong (>0.7), Moderate (0.4–0.7), or Thin (<0.4).
+
+6. LEVEL 4 — Does the physics structure predict anything about this phenomenon that the original description does not contain? If yes, state the prediction and whether you can verify it from the retrieved text.
+
+7. HONEST LABEL — Even at high density, do not call this proof. Call it: "Strongest available structural correspondence" / "Structural claim requiring engagement" / "Suggestive, further investigation warranted" — depending on density and whether level 4 holds.
+
+---
+
+Close with: What is the single highest-density isomorphic mapping in the entire retrieved text? State the physics process, the density score, and the one sentence that makes it most compelling.

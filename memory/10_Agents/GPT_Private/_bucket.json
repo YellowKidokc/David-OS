@@ -1,0 +1,10 @@
+{
+  "bucket_id": "gpt-private",
+  "label": "GPT Private",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["gpt"],
+  "vector_namespace": "gpt-private",
+  "requires_approval_to_share": true
+}
+

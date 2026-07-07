@@ -1,0 +1,10 @@
+{
+  "bucket_id": "operator-private",
+  "label": "Operator Private",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["operator"],
+  "vector_namespace": "operator-private",
+  "requires_approval_to_share": true
+}
+

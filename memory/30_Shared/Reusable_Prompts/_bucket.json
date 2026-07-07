@@ -1,0 +1,10 @@
+{
+  "bucket_id": "reusable-prompts",
+  "label": "Reusable Prompts",
+  "owner": "operator",
+  "visibility": "shared",
+  "allowed_agents": ["operator", "codex", "claude", "gemini", "kimi", "gpt"],
+  "vector_namespace": "reusable-prompts",
+  "requires_approval_to_share": false
+}
+

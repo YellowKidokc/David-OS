@@ -1,0 +1,132 @@
+# Fruits of the Spirit as Coherence Outputs — Full Corpus Analysis
+
+The following text has been retrieved from a vectorized knowledge base containing the canon and the series under analysis. The retrieval is semantic — chunks are returned by structural similarity to these questions, not by page order. Treat them as representative samples from across the full body of work.
+
+This prompt runs the Fruits of the Spirit framework as a complete standalone analysis against all retrieved corpora. Do not evaluate whether the canon is true. Treat the Fruits formalization as the given framework and detect where it manifests in the retrieved text.
+
+---
+
+## Framework
+
+Given the Fruits of the Spirit formalization, treat the nine Fruits not as moral commands but as observable outputs of a coherent system.
+
+**The Fruits vector:**
+
+Love, Joy, Peace, Patience, Kindness, Goodness, Faithfulness, Gentleness, and Self-Control.
+
+**The anti-Fruits** are not a separate ontology. They are negative values along the same dimensions:
+
+Hatred, Despair, Anxiety, Impatience, Cruelty, Corruption, Betrayal, Harshness, and Addiction.
+
+**The formal model:**
+
+Φᵢ(χ) = tanh(βᵢ(χ − χ_c))
+
+Interpretation:
+- χ > χ_c means Fruits begin to manifest.
+- χ < χ_c means anti-Fruits appear by default.
+- χ = χ_c means the system is unstable or undecided.
+- Fruits are diagnostic outputs of coherence.
+- Anti-Fruits are diagnostic outputs of incoherence.
+- Text should not be judged by whether it mentions the Fruits, but by whether it displays their structure.
+
+---
+
+## Questions
+
+### 1. Which Fruits are structurally present across the retrieved corpus?
+
+Scan all retrieved chunks for Fruit and anti-Fruit manifestations. Do not require the text to name them. Look for the structural signature of each Fruit dimension.
+
+For each Fruit found, identify:
+- Which dimension (Love, Joy, Peace, etc.)
+- Positive or anti-Fruit state
+- Whether it is explicit, implicit, narrative, rhetorical, or mathematical
+- Which source corpus it appears in (MDA, GTQ, Cannon)
+
+---
+
+### 2. Is the Fruit being generated or commanded?
+
+Distinguish between two modes across all retrieved text:
+- **Output mode**: the Fruit appears as a natural output of coherence, connection, or alignment
+- **Command mode**: the Fruit is presented as something the agent must perform or achieve
+
+Ask: Does the retrieved text treat Fruits as emergent outputs of a coherent system, or as imposed moral requirements?
+
+Flag any place where the text slides from output mode into command mode without acknowledging the shift.
+
+---
+
+### 3. Where does the anti-Fruit appear as the entropy default?
+
+Given the formal model, the anti-Fruit is the low-χ attractor — the state a system drifts toward without external coherence input.
+
+Search the retrieved text for places where:
+- Entropy default is named or shown
+- Anti-Fruit states emerge from disconnection or drift
+- The system requires grace, alignment, or external input (β) to cross the χ_c threshold
+
+Return each case with: which anti-Fruit, which decay mechanism, what the text implies about the source of coherence.
+
+---
+
+### 4. Where does the text reveal a threshold crossing?
+
+The most important Fruit dynamics occur at χ = χ_c — the transition point where a system moves from anti-Fruit to Fruit or back.
+
+Search for threshold moments: conversions, corrections, realizations, confrontations, collapses, or rescues where the text shows a system crossing or approaching the coherence threshold.
+
+Ask:
+- What triggered the crossing?
+- Was the crossing sudden or gradual?
+- Did external input play a role?
+- Was the Fruit state stable after the crossing?
+
+---
+
+### 5. Where does the Bundle Property appear?
+
+The Bundle Property states that the nine Fruits are not independent — they are co-produced by coherence. High χ produces all nine simultaneously; low χ produces the anti-cluster.
+
+Search the retrieved text for:
+- Places where multiple Fruits appear together without the text commenting on their connection
+- Places where anti-Fruits cluster together
+- Any evidence that the text implicitly treats the Fruits as bundled rather than separable
+
+Ask: Does any text reveal a dependency chain among Fruits (e.g., Patience producing Peace, Self-Control requiring Joy)?
+
+---
+
+### 6. Where does Self-Control appear as output rather than input?
+
+Self-Control is the most misclassified Fruit — commonly treated as a discipline the agent must generate from inside rather than an output of alignment.
+
+Search the retrieved text for every appearance of Self-Control or its anti-Fruit (Addiction) and classify:
+- Is Self-Control presented as something the agent produces, or something that results from coherence?
+- Is the text treating it as a starting point or an endpoint?
+- Does the text reveal the coherence mechanism that generates it?
+
+---
+
+### 7. Which Fruit connects most directly to the Master Equation variables?
+
+Map each of the nine Fruits to one or more Master Equation variables (G, M, E, S, T, K, R, Q, F, C):
+- Love → S (binding force)
+- Joy → (propose mapping from retrieved text)
+- Peace → (propose mapping from retrieved text)
+- etc.
+
+Use the retrieved text to identify which mappings are confirmed by structural appearance across multiple sources.
+
+---
+
+### 8. What does the retrieved corpus reveal about the Fruit vector that the formal Fruits document did not explicitly reveal?
+
+After mapping Fruits across MDA, GTQ, and Cannon:
+- Did any Fruit appear in a form the formal document had not named?
+- Did any anti-Fruit appear with a mechanism the document had not described?
+- Did any source corpus show a Fruit dependency the formal model had not captured?
+- Did the corpus reveal a tenth dimension worth adding to the vector?
+
+Return these as **reverse insights** — places where the corpus revealed something about the Fruits framework that the framework could not reveal about itself.

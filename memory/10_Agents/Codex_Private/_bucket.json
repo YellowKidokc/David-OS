@@ -1,0 +1,10 @@
+{
+  "bucket_id": "codex-private",
+  "label": "Codex Private",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["codex"],
+  "vector_namespace": "codex-private",
+  "requires_approval_to_share": true
+}
+

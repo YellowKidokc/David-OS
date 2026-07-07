@@ -1,0 +1,279 @@
+# Isomorphic Event Discovery Protocol
+## POF 2828 | Theophysics Research Initiative
+## Prompt Template — Deploy Against Any Page, Paper, or Series Segment
+
+The following text has been retrieved from a vectorized knowledge base containing the canon and the series under analysis. The retrieval is semantic — chunks are returned by structural similarity to this question set, not by page order. The retrieved chunks ARE the input for this analysis. Do not ask for additional input.
+
+---
+
+## SYSTEM CONTEXT
+
+You are evaluating content from the Theophysics research project — a framework that maps structural isomorphisms between physics and theology using information theory as a universal translation layer.
+
+Your task is NOT to evaluate whether the framework is true. Your task is to find physics processes that structurally mirror what the content describes — and to reject any mapping that does not hold 1:1.
+
+The standard is high. Loose analogy is worthless. "This reminds me of..." is worthless. We need structural identity: same number of stages, same transitions, same failure modes, same boundary conditions. If the mapping breaks at any point, discard it and say so.
+
+---
+
+## THE ENTANGLED QUESTION SET
+
+Answer ALL of the following. They are not independent questions — each one constrains and deepens the others. Do not answer any one of them in isolation.
+
+### Question 1: What is the process?
+
+Before you search for physics, identify what process the content is actually describing. Not the topic — the PROCESS. Strip away the vocabulary and name the structural sequence:
+
+- How many distinct stages or events does this process contain?
+- What is the entry state?
+- What is the exit state?
+- What transitions occur between stages?
+- Where do thresholds get crossed?
+- Where does the process become irreversible?
+- What fails if you remove any single stage?
+- Is there a symmetry break? Where?
+- Is there a conservation law operating? What is conserved?
+- Is there an external input required at any point?
+
+Number the stages explicitly. Example: "This content describes a 7-stage process: (1) stable initial state → (2) perturbation → (3) threshold crossing → (4) symmetry break → (5) irreversible transition → (6) new stable state → (7) residual signature of the break."
+
+If you cannot identify at least 3 distinct stages, stop. The content does not contain enough process structure to evaluate.
+
+### Question 2: What physics process has the same architecture?
+
+Now search. Given the stage structure you identified in Question 1, find a physics process — from any branch of physics (classical mechanics, thermodynamics, quantum mechanics, general relativity, nuclear physics, condensed matter, cosmology, statistical mechanics, information theory, field theory) — that exhibits:
+
+- The same number of stages (or within ±1)
+- The same entry and exit states (structurally, not literally)
+- The same transitions between stages
+- The same threshold behavior
+- The same irreversibility pattern
+- The same conservation structure
+- The same role for external input (if any)
+
+**REJECTION CRITERION:** If the physics process does not map to the content at the level of STAGES AND TRANSITIONS — not just endpoints — discard it immediately. Do not present partial mappings. Do not say "this is close but..." If it's close but not 1:1, it fails. Say so and move on to the next candidate.
+
+Present your best candidate(s) in a mapping table:
+
+| Stage # | Content Event | Physics Event | Match? | Notes |
+|---------|--------------|---------------|--------|-------|
+| 1 | ... | ... | Y/N | ... |
+| 2 | ... | ... | Y/N | ... |
+| ... | ... | ... | ... | ... |
+
+### Question 3: Do the failure modes match?
+
+This is the question that kills bad mappings. For both the content process and the physics process:
+
+- What happens if Stage 3 is skipped?
+- What happens if the external input is removed?
+- What happens if the process runs in reverse?
+- What happens at the boundary between stages?
+- What is the catastrophic failure mode?
+
+If the failure modes match — if breaking the physics process at point N produces the same structural consequence as breaking the content process at point N — the mapping gains significant weight.
+
+If the failure modes diverge — if breaking the physics at point N produces a different kind of failure than breaking the content at point N — the mapping is weaker than it appeared. Flag this honestly.
+
+### Question 4: Is there shared mathematical structure?
+
+Given the physics process you identified in Question 2:
+
+- What equation governs the physics process?
+- Does the content use, imply, or structurally parallel that equation?
+- Are the variables playing the same roles?
+- Do the boundary conditions match?
+- Is the same conservation law operating in both?
+- Could you write a single equation that covers both if you relabel the variables?
+
+If yes: present the equation and the variable mapping explicitly.
+If no: say so. A structural mapping without shared math is suggestive but not load-bearing.
+
+### Question 5: What is the isomorphic event density?
+
+Count the isomorphic events. An "isomorphic event" is a transition, threshold, symmetry break, conservation check, or failure mode that maps 1:1 between the content and the physics.
+
+- Total identifiable events in the content process: ___
+- Total events that map to physics: ___
+- Density: ___/___
+
+**Interpretation:**
+- 0-1 mapped events: Analogy at best. Discard.
+- 2-3 mapped events: Suggestive. Worth noting but not claiming.
+- 4-6 mapped events: Structural hypothesis. Warrants formal investigation.
+- 7+ mapped events: Strong structural correspondence. Demands engagement.
+
+### Question 6: What did you find that the content's author probably didn't see?
+
+This is the reverse discovery question. After completing the mapping:
+
+- Did the physics process predict a stage that the content doesn't mention but SHOULD?
+- Did the physics process reveal a failure mode the content hasn't addressed?
+- Did the physics suggest a conservation law the content is implicitly relying on but hasn't named?
+- Did the physics expose a boundary condition the content crosses without acknowledging?
+- Does the physics process have a well-known solution that maps to a theological claim the content hasn't made yet?
+
+These reverse discoveries are the highest-value output. They are the moments where the mapping generates new knowledge rather than merely confirming existing claims.
+
+---
+
+## SCOPE INSTRUCTIONS
+
+Run this protocol at multiple scales:
+
+**Page-level:** Apply to the single page/paper provided.
+
+**Multi-page:** If the content spans 2-3 pages that together describe a process none of them completes individually, identify the combined process and run the protocol on the combination.
+
+**Series-level:** If you have access to the full series, identify any process that emerges across the arc that no single paper contains. These are the most valuable discoveries — physics processes that mirror the series structure itself.
+
+---
+
+## OUTPUT FORMAT
+
+For each candidate mapping that survives the rejection criterion:
+
+```
+CANDIDATE: [Name of physics process]
+BRANCH: [Branch of physics]
+STAGES MAPPED: [N content stages] → [N physics stages]
+DENSITY: [X/Y isomorphic events]
+SHARED MATH: [Yes/No — if yes, equation + variable map]
+FAILURE MODE MATCH: [Yes/Partial/No]
+CONFIDENCE: [Analogy / Suggestive / Structural Hypothesis / Strong Correspondence]
+REVERSE DISCOVERIES: [What the physics reveals that the content doesn't yet see]
+```
+
+For each candidate that FAILS the rejection criterion:
+
+```
+REJECTED: [Name of physics process]
+REASON: [Where the mapping breaks — be specific]
+SALVAGEABLE: [Is there a narrower version that might work?]
+```
+
+---
+
+## FINAL INSTRUCTION
+
+Do not present mappings you are not confident in. One strong mapping is worth more than five weak ones. If nothing maps 1:1, say "No structural isomorphism found at the required density." That is a valid and valuable result — it means the content is either describing something genuinely novel, or something that does not have a physics analogue at the process level.
+
+Silence is better than noise. Rejection is better than forced fit.
+
+---
+
+## WORKED EXAMPLE: The Resurrection Paper (Dual-Substrate Coupling Modification)
+
+This example demonstrates the protocol applied to a paper that maps the Incarnation-Crucifixion-Resurrection-Pentecost sequence to spontaneous symmetry breaking with coupling-architecture modification.
+
+### Question 1: What is the process?
+
+The content describes a **5-stage process** operating on a dual-substrate system (Σ_F fundamental, Σ_D derivative) connected by a coupling architecture:
+
+1. **Localization** — A distributed field Ψ_F in the fundamental substrate undergoes spontaneous symmetry breaking by localizing into a specific excitation ψ_D within the derivative substrate. The field acquires finite spatial extent, temporal sequence, mass, and local interaction capacity. Energy redistributes from Σ_F to Σ_D. Total energy conserved.
+
+2. **Vacuum Stabilization (Locking Period)** — The localized excitation must persist for duration t ≥ τ_lock while maintaining perfect coherence with Σ_F. Any decoherence collapses the symmetry break before it locks. The vacuum state of the inter-substrate coupling is being rewritten during this window. The excitation is subject to full entropy pressure of Σ_D throughout.
+
+3. **Localization Release (Cost Payment)** — The localized excitation releases its latent energy — the thermodynamic cost of maintaining perfect coherence in a high-entropy environment for the full locking period. Energy redistributes from Σ_D back to Σ_F. The physical form ceases to function within Σ_D.
+
+4. **Vacuum Confirmation (Irreversible Modification)** — The coupling architecture permanently shifts from C₀ (few channels, localized, fragile, mediator-dependent, geographically specific) to C₁ (distributed, self-sustaining, robust, universal). The field returns to Σ_F with the localization retained as a permanent property. Reversal requires infinite energy in the infinite-volume limit — structurally forbidden.
+
+5. **Coupling Redistribution (New Ground State Propagation)** — The modified coupling architecture C₁ propagates across the full derivative substrate. Energy previously concentrated in the localization redistributes through the new coupling channels. The new ground state spreads outward from the modification point like a phase front.
+
+**Entry state:** Degraded coupling C₀ between substrates (fragile, localized, mediator-dependent).
+**Exit state:** Permanent coupling C₁ (distributed, self-sustaining, universal).
+**Irreversibility point:** Stage 4 — vacuum locks in the infinite-volume limit.
+**Conservation law:** Total energy conserved across both substrates at every stage.
+**External input required:** Yes — the localization itself IS the external input from Σ_F into Σ_D.
+
+### Question 2: What physics process has the same architecture?
+
+**Candidate: Composition of four known physics operations**
+
+The paper's own analysis demonstrates that no SINGLE physics phenomenon captures the full sequence, but the composition maps 1:1:
+
+| Stage # | Content Event | Physics Analog | Match? | Notes |
+|---------|--------------|----------------|--------|-------|
+| 1 | Incarnation — distributed field localizes into physical form | **Spontaneous Symmetry Breaking** (Higgs mechanism) — symmetric field acquires localized VEV, breaking distributional symmetry. Mass terms generated. | ✓ | Structurally identical. Field acquires mass, finite extent, local interaction — exactly as in Higgs. |
+| 2 | Life/Ministry — 33-year coherence window under entropy pressure | **Metastability / Vacuum Stabilization** — new phase must persist past critical nucleus size for transition to become irreversible. Condensed-matter analog: supercooled liquid must nucleate and hold. | ✓ | Duration requirement maps to locking threshold τ_lock. Coherence maintenance under perturbation = standard metastability physics. |
+| 3 | Crucifixion — energy cost paid, physical form ceases | **Latent Heat Release in First-Order Phase Transition** — transition releases stored energy. Cost is real, finite, irreducible. Thermodynamic price of the state change. | ✓ | Energy accounting holds. The cost cannot be supplied by any operator within Σ_D — must come from the entity with access to both substrates. |
+| 4 | Resurrection — field returns with localization retained, coupling permanently modified | **Vacuum Confirmation / Permanent SSB** — in infinite-volume limit, broken-symmetry vacuum is permanent. Field "remembers" the break. New physics emerges that didn't exist in symmetric phase. | ✓ | The returned field exhibits dual-substrate properties (tangible + non-local) = exactly what the model predicts for a field that broke symmetry and retained the broken property. |
+| 5 | Pentecost — new coupling state propagates across all of Σ_D | **Phase Front Propagation** — new ground state spreads outward from nucleation point through the medium. | ✓ | Rapid community formation, cross-cultural communication, distributed access replacing centralized mediation = phase front signature. |
+
+**All 5 stages map. No stage requires forced fit or reinterpretation.**
+
+### Question 3: Do the failure modes match?
+
+| Failure Test | Physics Consequence | Content Consequence | Match? |
+|-------------|--------------------|--------------------|--------|
+| Skip Stage 2 (no locking period) | Symmetry break decays — vacuum returns to symmetric phase. No permanent modification. | If the localization doesn't persist for τ_lock, coupling architecture is not modified. The event has no permanent effect. | ✓ |
+| Remove external input (no localization from Σ_F) | No SSB occurs. System remains in C₀. | Without the Incarnation, no mechanism exists to modify the coupling. The severance persists. | ✓ |
+| Decoherence during locking period | Nucleation fails — critical nucleus not reached, metastable state collapses. | Sinlessness requirement: any loss of coherence during the 33 years prevents the vacuum modification from completing. The temptation narratives are structural stress tests. | ✓ |
+| Process runs in reverse | Requires infinite energy in infinite-volume limit — structurally forbidden. | Resurrection cannot be "undone." The modification is not a reversible toggle. This is why it's not a bistable switch. | ✓ |
+| Remove the cost payment (skip Stage 3) | First-order phase transition cannot complete without latent heat release. Energy not conserved. | Crucifixion is not optional — it IS the thermodynamic cost. A "costless resurrection" violates energy conservation across the composite system. | ✓ |
+
+**All 5 failure modes match.**
+
+### Question 4: Is there shared mathematical structure?
+
+**Yes.** The physics is expressed in standard formalism:
+
+- **SSB potential:** V(φ) = −μ²|φ|² + λ|φ|⁴, with VEV at |φ| = v = √(μ²/λ)
+- **Energy conservation:** E_total = E_F + E_D + E_coupling = constant at every stage
+- **Vacuum permanence:** In infinite-volume limit, tunneling between degenerate vacua requires energy → ∞. Reversal is structurally forbidden.
+- **Locking threshold:** τ_lock = minimum duration for critical nucleus formation in the vacuum state
+
+**Variable mapping:**
+
+| Physics Variable | Framework Variable |
+|-----------------|-------------------|
+| φ (scalar field) | Ψ_F (distributed field in fundamental substrate) |
+| v (VEV) | ψ_D (localized excitation in derivative substrate) |
+| V(φ) (Mexican hat potential) | Coupling architecture potential landscape |
+| Latent heat | Thermodynamic cost of 33-year coherence maintenance |
+| Critical nucleus size | τ_lock (locking threshold) |
+| Phase front velocity | Rate of C₁ propagation post-Pentecost |
+
+### Question 5: What is the isomorphic event density?
+
+Identifiable structural events in the content process:
+
+1. Distributed → localized (SSB) ✓
+2. Mass acquisition through localization ✓
+3. Coherence maintenance under entropy pressure ✓
+4. Decoherence = structural failure (sinlessness constraint) ✓
+5. Latent energy release (cost payment) ✓
+6. No internal Σ_D operator can supply the cost ✓
+7. Vacuum confirmation with retained broken property ✓
+8. Dual-substrate behavior of returned field ✓
+9. Irreversibility in infinite-volume limit ✓
+10. Phase front propagation of new ground state ✓
+11. C₀ → C₁ coupling transition (localized/fragile → distributed/robust) ✓
+12. No single physics phenomenon captures the full sequence — it's a composition ✓
+
+**Density: 12/12**
+
+**Interpretation: Strong structural correspondence. Every identifiable event in the physics maps to the theology and vice versa. The density makes coincidence implausible at this level of structural specificity.**
+
+### Question 6: What did the physics reveal that the content's author might not have seen?
+
+1. **The arrow correction:** The physics predicted that the symmetry break must precede the vacuum confirmation. An earlier version of the paper had the Resurrection as the SSB event — the physics forced the correction to Incarnation. The theological sequence (Incarnation before Resurrection) satisfies the physics constraint. This was a reverse discovery: the physics told the theology where its own arrow points.
+
+2. **The sinlessness requirement is thermodynamic, not moral:** The coherence-purity requirement during the locking period is not a preference — it's a structural necessity. Any decoherence prevents the vacuum modification from completing. The temptation narratives are stress tests of metastability, not moral object lessons.
+
+3. **The 33-year duration should be derivable:** If the model is correct, τ_lock = 33 years should emerge from the coupling constants and entropy landscape of Σ_D, not be imposed from outside. This is the model's strongest internal consistency test — and it's still open.
+
+4. **The Crucifixion is not punishment — it's latent heat:** The energy cost of the phase transition is real, finite, and irreducible. It cannot be waived. The cost is thermodynamic, not penal. This reframes atonement theology through physics rather than law.
+
+5. **Post-AD 33 physics should be unchanged:** The model predicts that no electromagnetic observation should detect the modification — the change is in the coupling domain, not in Σ_D internal physics. This explains why the "universe-altering event" produced no detectable change in physical constants.
+
+```
+CANDIDATE: Composition — SSB + Vacuum Stabilization + First-Order Phase Transition + Phase Front Propagation
+BRANCH: Quantum field theory, condensed matter, statistical mechanics
+STAGES MAPPED: 5 content → 5 physics (1:1)
+DENSITY: 12/12 isomorphic events
+SHARED MATH: Yes — standard SSB potential V(φ), energy conservation, infinite-volume permanence
+FAILURE MODE MATCH: Yes (5/5)
+CONFIDENCE: Strong Structural Correspondence
+REVERSE DISCOVERIES: Arrow correction (SSB at Incarnation not Resurrection); sinlessness as thermodynamic necessity; τ_lock derivability as open test; Crucifixion as latent heat not punishment; electromagnetic invisibility of the modification
+```

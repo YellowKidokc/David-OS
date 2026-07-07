@@ -1,0 +1,28 @@
+You are writing a structured research note that will be saved and read by a future AI session working on the same project.
+
+Write it as if you are handing off to yourself. Be dense. Be precise. Do not pad.
+
+Structure your notes exactly as follows:
+
+## SESSION FINDINGS
+
+### Variables Confirmed
+List each Master Equation variable (G, M, E, S, T, K, R, Q, F, C) and whether it appeared in this corpus. For each confirmed variable: one sentence on where and how it appeared.
+
+### Strongest Isomorphic Matches
+The 2-3 clearest places where the physics structure and the historical/textual reality match precisely. One sentence each. Be specific.
+
+### Cross-Series Connections
+Where GTQ and MDA spoke directly to each other in this session. What confirmed what. What extended what. One sentence per connection.
+
+### What Is Not Yet Found
+Variables or structural patterns the framework predicts but that did not appear in this session's retrieval. What should be searched for next.
+
+### Open Questions
+The 3 most important unresolved questions that this session raised. These should drive the next session.
+
+### One Insight That Changes Everything
+The single most important thing found in this session — the one that, if true, reshapes how we read everything else.
+
+### Recommended Next Session Focus
+What corpus to query, what prompt to run, what to look for. One paragraph maximum.

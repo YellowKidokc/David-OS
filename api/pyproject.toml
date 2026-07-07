@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "file-intelligence-hub"
+version = "0.1.0"
+description = "Control plane for file-first automation"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110", "pydantic>=2", "uvicorn>=0.29", "watchdog>=4"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[project.scripts]
+fihub-watch = "file_intelligence_hub.watchers.native:main"
+fihub-poll = "file_intelligence_hub.watchers.runner:main"
+fihub-worker = "file_intelligence_hub.workers.runner:main"
+fihub-api = "file_intelligence_hub.cli:api_main"
+fihub-health = "file_intelligence_hub.cli:health_main"
+fihub-top = "file_intelligence_hub.cli:top_main"
+
+[tool.setuptools.packages.find]
+include = ["file_intelligence_hub*"]
+
+[tool.setuptools.data-files]
+"config" = ["config/folder_profiles.example.json", "config/top_of_mind/api_actions.example.json"]
+"schemas" = ["schemas/folder_profiles.schema.json"]

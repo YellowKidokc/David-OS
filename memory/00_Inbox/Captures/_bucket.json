@@ -1,0 +1,10 @@
+{
+  "bucket_id": "inbox-captures",
+  "label": "Captured Text and Screens",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["operator", "codex"],
+  "vector_namespace": "inbox-captures",
+  "requires_approval_to_share": true
+}
+

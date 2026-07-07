@@ -1,0 +1,10 @@
+{
+  "bucket_id": "bank-api-docs",
+  "label": "API Docs Knowledge Bank",
+  "owner": "operator",
+  "visibility": "project",
+  "allowed_agents": ["operator", "codex", "claude", "gemini", "kimi", "gpt"],
+  "vector_namespace": "bank-api-docs",
+  "requires_approval_to_share": false
+}
+

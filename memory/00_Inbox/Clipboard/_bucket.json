@@ -1,0 +1,10 @@
+{
+  "bucket_id": "inbox-clipboard",
+  "label": "Clipboard Inbox",
+  "owner": "operator",
+  "visibility": "private",
+  "allowed_agents": ["operator", "codex"],
+  "vector_namespace": "inbox-clipboard",
+  "requires_approval_to_share": true
+}
+
