@@ -1,0 +1,27 @@
+{
+  "watch_roots": [
+    "C:\\Users\\David\\Documents"
+  ],
+  "ignore_roots": [
+    "C:\\Users\\David\\AppData",
+    "C:\\Users\\David\\AppData\\Local\\Microsoft\$WINDOWS.*",
+    "C:\\Users\\David\\AppData\\Local\\Temp",
+    "C:\\$RECYCLE.BIN"
+  ],
+  "target_drive_root": "O:\\CORTEX-FIS-Drive",
+  "state_file": "D:\\GitHub\\David-OS\\file-intelligence-system\\continuous-scanner\\run\\state.json",
+  "scan_interval_seconds": 2,
+  "batch_limit": 100,
+  "dedupe_seconds": 1.25,
+  "max_file_size_bytes": 268435456,
+  "include_extensions": [],
+  "exclude_extensions": [
+    ".tmp",
+    ".log",
+    ".cache",
+    ".bak",
+    ".sqlite",
+    ".sqlite3"
+  ],
+  "fallback_full_scan_hours": 0
+}

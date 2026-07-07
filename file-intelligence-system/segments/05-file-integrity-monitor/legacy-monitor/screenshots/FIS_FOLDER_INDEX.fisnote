@@ -1,0 +1,25 @@
+---
+fis_schema: tag-ledger.v1
+run_id: 1
+folder: "file-integrity-monitor\\screenshots"
+generated_at: "2026-06-23T17:14:16"
+ledger: "D:\\DONT TOUCH BOOT UP\\FIS\\fis_runtime\\tag_ledger.sqlite"
+tags: ["folder", "screenshots", "media"]
+file_count: 4
+child_folder_count: 0
+---
+
+# FIS Folder Index: screenshots
+
+This folder has been seen by the FIS tag ledger. The ledger records names, tags, skipped items, and move status.
+
+Move state: every listed file starts as `not_moved` until a later approved mover records otherwise.
+
+## Direct Files
+
+- `baseline.png` :: #file #media #image #ext-png #baseline :: move_status=not_moved
+- `live_monitoring.png` :: #file #media #image #ext-png #live #monitoring :: move_status=not_moved
+- `main_gui.png` :: #file #media #image #ext-png #main #gui :: move_status=not_moved
+- `scan_detected.png` :: #file #media #image #ext-png #scan #detected :: move_status=not_moved
+
+<!-- FIS tag-ledger.v1: parseable note; safe to regenerate. -->

@@ -1,0 +1,32 @@
+{
+  "watch_roots": [
+    "C:\\Users\\David\\Documents",
+    "D:\\GitHub\\"
+  ],
+  "ignore_paths": [
+    "C:\\Users\\David\\AppData",
+    "D:\\$RECYCLE.BIN",
+    "C:\\Users\\David\\.cache",
+    "D:\\GitHub\\.git"
+  ],
+  "ignore_names": [
+    ".git",
+    ".venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    "node_modules",
+    "dist",
+    "build"
+  ],
+  "dedupe_window_seconds": 1.5,
+  "scan_interval_seconds": 900,
+  "max_files_per_scan": 4000,
+  "job_batch_size": 300,
+  "ignore_hidden": true,
+  "state_file": "D:\\GitHub\\David-OS\\file-intelligence-system\\watchers\\global-watcher\\run\\watch_state.json",
+  "job_dir": "D:\\GitHub\\David-OS\\file-intelligence-system\\watchers\\global-watcher\\jobs\\incoming",
+  "request_dir": "D:\\GitHub\\David-OS\\file-intelligence-system\\watchers\\global-watcher\\jobs\\inspect_requests",
+  "inventory_dir": "D:\\GitHub\\David-OS\\file-intelligence-system\\watchers\\global-watcher\\jobs\\inventory",
+  "max_file_size_bytes": 262144000
+}

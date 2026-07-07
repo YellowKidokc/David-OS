@@ -1,0 +1,10 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+baseline.json
+integrity_log.txt
+integrity_report.txt
+backups/
+.vscode/
