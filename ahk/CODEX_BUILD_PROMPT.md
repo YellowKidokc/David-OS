@@ -1,51 +1,67 @@
-# CODEX BUILD PROMPT — ahk
-## Location: D:\GitHub\David-OS\ahk (+ bridges\ahk for the v3 controller lineage)
+# CODEX BUILD PROMPT — ahk (Overlay v2: THE definitive assembly)
+## Location: D:\GitHub\David-OS\ahk
+**Fabel (Opus) | 2026-07-07 rev2 | Supersedes rev1. All source pieces identified; this is assembly, not invention.**
 
-## Current State
-- `overlay\ai_input_overlay.ahk` (July 7, Fabel, UNTESTED) — draggable always-on-top box;
-  whatever sits under its center receives pasted text + Enter. Position IS the target.
-- `overlay\bridge_listener.ps1` — HTTP front door, POST /send port 8765, token
-  `davidos-bridge-2026`, writes JSON to `_inbox\`, overlay polls at 200ms.
-- `overlay\start_bridge.bat` — launches both.
-- `bridges\ahk\` — AI Chat Controller v3 lineage + 13 API_CALL prompt files +
-  routing manifest (from tom_fis_api). Timer-polling era. Reference, being superseded.
+## The verdict that produced this spec
+Five sources each solved one piece. Nobody merged them. Overlay v2 is the merge:
 
-## What Works (don't touch)
-- The overlay's geometric targeting concept. David designed it; it stays.
-- The token auth pattern on the listener.
+| Piece | Source | What it contributes |
+|---|---|---|
+| Window-attached rendering | `ShinsOverlayClass` (C:\Users\David\Downloads\Compressed\ShinsOverlayClass-main.zip, AHK V2 subfolder) | Direct2D `AttachToWindow(client_area)` — overlay lives in the target window's coordinate space; survives resize/maximize/monitor-drag with ZERO tracking code. GPU-drawn, click-through. |
+| Per-AI profiles | `\\192.168.2.50\h_hp\Desktop\pof2828_controller_v3.ahk` | Profile class: {name, proc, title, offR, offB, inpH} — input-box position as offsets from right/bottom edges, re-anchor hotkey, Ctrl+1-5 profile switch. |
+| Button bar + input UI | `\\192.168.2.50\h_hp\Desktop\claude_overlay_v2.ahk` | The layout David wants: ghost bar (Copy/New/Artifact/Projects, no-focus-steal E0x08000000), floating multi-line input with Send/Clear/Close. |
+| HTTP bridge | `D:\GitHub\David-OS\ahk\overlay\` (rev1, built 07-07) | POST /send port 8765, X-Bridge-Token auth, inbox-file handoff, LAN reachable. Keep listener as-is. |
+| Packaging + settings | Blog pattern (Window Center & Resizer, in David's doc drop) | settings.json is THE contract: profiles, keybinds, sizes. Script self-reloads on change. Electron (apps\desk) spawns portable AutoHotkey64.exe from resources — one install. |
+| Prompt assembler | `\\192.168.2.50\h_hp\Desktop\prompt_assembler.ahk` | Reference for the command palette (/send /paste /profile). Port commands, not code. |
 
-## What Needs Rewriting (after David's first live test — coordinate in town-square)
-- Per-app Enter behavior: some Electron apps send on Enter, some need Ctrl+Enter.
-  Add `"send_key"` field to the /send payload ("enter" | "ctrl-enter" | "shift-enter"),
-  default "enter". Overlay right-click menu gets a per-session override.
-- Reliability: replace fixed Sleeps with clipboard-set verification and a retry
-  (max 2) if the paste-length check fails.
+**EXCLUDED: ShinsMemoryClass.** Memory scanning is for stable game structs; Electron/V8
+heap addresses shuffle constantly. Do not attempt memory-read capture. Receive = capture
+box (below), UIA investigation is a stretch goal only.
 
-## What Needs Building — response capture (the missing half)
-The bridge sends INTO the apps; nothing comes back out. Build the capture side:
-`overlay\response_capture.ahk` — hotkey (Ctrl+Alt+C) copies the AI's latest response
-region: user drags a SECOND overlay ("capture box") over the response area once;
-on trigger, the script clicks-drags-selects within that box OR uses triple-click+
-Ctrl+A-scoped selection, copies, and POSTs the clipboard to the hub:
-`POST http://localhost:2828/top-of-mind/messages` with `{source: "<app-label>", text: ...}`.
-App-label set when the capture box is placed (small input prompt).
-NOTE: a DAVID_OS_ARCHITECTURE.md Section 9 exists in concept (SetWinEventHook binding,
-Chrome extension capture) but is NOT on disk. Until it lands, build ONLY the manual
-capture-box version above. Do not architect the extension yourself.
+## Build: `overlay\overlay_v2.ahk` (one script + ShinsOverlayClass.ahk as lib)
+**LIVE-TEST RESULT 2026-07-07 20:17:03 — v1 delivery mechanics VERIFIED on Claude Desktop:
+click-through targeting, clipboard paste, plain Enter sends. Build on that Deliver path.**
+0. **David's three core requirements (design authority: David, 07-07 voice session):**
+   a. **Window binding** — attach by ahk_exe + window class, NOT screen coords. Overlay
+      rides the window through move/resize/minimize/monitor changes.
+   b. **Ghost toggle** — one hotkey flips interactive <-> click-through translucent
+      (mouse and voice pass through; overlay still visible and API-live).
+   c. **Mapping mode** — David clicks "Map", then clicks a real control in the target app
+      (send, mic, new-chat...), names it. Stored as window-RELATIVE offsets in
+      settings.json keyed by exe/class, with an action per button (click | click+enter |
+      paste-here | capture-from-here). Layout auto-loads for every future window of that
+      class. API can invoke named buttons: POST /send {"button":"mic","profile":"claude"}.
+1. **Anchor**: on profile select (Ctrl+1-5 or /profile), find window by proc/title,
+   `AttachToWindow` client area. Input target point = (right-offR, bottom-offB) from
+   profile. Re-anchor = Ctrl+Shift+B. Unknown app fallback = rev1 geometric mode
+   (overlay position IS the target).
+2. **UI** (drawn via Shins DrawText/FillRectangle, hit-tested manually): v2's button
+   bar + input box. Buttons: Send, Copy, New, Capture, Profiles. Enter=send,
+   Shift+Enter=newline. send_key per profile (enter|ctrl-enter|shift-enter).
+3. **Send path**: HTTP /send inbox (rev1 listener unchanged) AND local input box both
+   funnel through one Deliver(text, profile): focus target point, clipboard paste,
+   length-verify, retry x2, send_key.
+4. **Receive path**: capture box — user drags a region over the response area once per
+   profile (stored in settings.json). Ctrl+Alt+C or Capture button: select-all within
+   region (triple-click + drag or Ctrl+A scoped), copy, POST to hub
+   `http://localhost:2828/top-of-mind/messages {source: profile.name, text}`.
+5. **Settings**: `overlay\settings.json` — profiles[], keybinds{}, bridge{port,token}.
+   FileWatch it; self-reload on change (blog pattern). NO hardcoded values in the script.
+6. **Packaging**: `apps\desk` gets a settings editor page writing the same settings.json,
+   and Electron main spawns AutoHotkey64.exe + overlay_v2.ahk from resources
+   (blog's autohotkey.ts pattern, port it).
+
+## Tests — kill condition (live, demonstrated to David)
+- Attach to Claude Desktop; resize, maximize, drag to second monitor — input target
+  and buttons stay glued. Repeat on Kimi + GPT desktop.
+- 500-word POST /send from another machine lands complete and sends.
+- Capture box round-trip: response text appears in hub message stream with source label.
+- Edit settings.json by hand -> overlay reloads within 2s, new keybind live.
+- Profiles survive script restart. Zero focus steal while typing in other apps.
 
 ## Dependencies
-- Needs: hub running (port 2828) for capture POSTs; api\ prompt done for message routes.
-- Feeds: Mattermost crew (via hub relay), the message wall in apps\desk.
-
-## Tests — kill condition
-```
-start_bridge.bat -> right-click overlay -> "Send test line" lands in Notepad under it
-curl POST /send with 500-word text -> arrives complete, single Enter fires
-capture box over a Notepad region -> Ctrl+Alt+C -> text appears via hub API
-```
-DONE = all three manual tests pass on Claude Desktop + one more Electron app,
-demonstrated to David live.
+Needs hub on 2828 (running). apps\desk settings page can lag the AHK build — don't block on it.
 
 ## Priority
-1. David's live test of the existing overlay (blocks everything).
-2. send_key + retry hardening. 3. response_capture.ahk.
+Anchor+UI first (this is what David touches daily), send path, settings reload,
+capture box, Electron packaging last.
