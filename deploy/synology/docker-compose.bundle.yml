@@ -12,7 +12,7 @@ services:
       FIHUB_API_TOKEN: "${FIHUB_API_TOKEN}"
       FIHUB_DB_PATH: "/data/top-of-mind.sqlite3"
     volumes:
-      - "${FIHUB_DATA_DIR:-/volume1/docker/top-of-mind-api/data}:/data"
+      - "${FIHUB_DATA_DIR:-./data}:/data"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:10000/openapi.json', timeout=5).read()"]
       interval: 30s
