@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from typing import Callable
 
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 BASE_SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -376,6 +376,41 @@ def _migration_12(conn: sqlite3.Connection) -> None:
     conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (12)")
 
 
+def _migration_13(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(nodes)").fetchall()}
+    additions = {
+        "hostname": "ALTER TABLE nodes ADD COLUMN hostname TEXT NOT NULL DEFAULT ''",
+        "priority": "ALTER TABLE nodes ADD COLUMN priority INTEGER NOT NULL DEFAULT 100",
+        "hub_url": "ALTER TABLE nodes ADD COLUMN hub_url TEXT",
+        "leader_status": "ALTER TABLE nodes ADD COLUMN leader_status TEXT NOT NULL DEFAULT 'helper'",
+        "is_primary": "ALTER TABLE nodes ADD COLUMN is_primary INTEGER NOT NULL DEFAULT 0",
+    }
+    for column, sql in additions.items():
+        if column not in existing:
+            conn.execute(sql)
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS capability_registry (
+            name TEXT PRIMARY KEY,
+            description TEXT NOT NULL DEFAULT '',
+            enabled INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_nodes_leader_status ON nodes(leader_status, priority);
+        """
+    )
+    capabilities = (
+        "watch_files", "inspect_folder", "nlp_extract", "ocr_image", "tag_file", "rename_plan",
+        "ahk_send", "ahk_capture", "react_ui", "api_host", "graph_rebuild",
+    )
+    conn.executemany(
+        "INSERT OR IGNORE INTO capability_registry (name) VALUES (?)",
+        [(capability,) for capability in capabilities],
+    )
+    conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (13)")
+
+
 MIGRATIONS: dict[int, Migration] = {
     2: _migration_2,
     3: _migration_3,
@@ -388,6 +423,7 @@ MIGRATIONS: dict[int, Migration] = {
     10: _migration_10,
     11: _migration_11,
     12: _migration_12,
+    13: _migration_13,
 }
 
 

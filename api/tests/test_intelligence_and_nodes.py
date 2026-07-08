@@ -84,6 +84,121 @@ def test_node_heartbeat_health_and_safe_repair_logging(tmp_path):
     assert NodeRepo(db.conn).list_repairs()[0]["source_node"] == "node-b"
 
 
+def test_node_coordination_contract_and_help_request_jobs(tmp_path):
+    db = Database(tmp_path / "hub.sqlite3")
+    node_repo = NodeRepo(db.conn)
+    job_repo = JobRepo(db.conn)
+
+    primary = node_repo.heartbeat(
+        {
+            "node_id": "synology-main",
+            "node_role": "hub",
+            "hostname": "synology",
+            "capabilities": ["api_host", "watch_files", "inspect_folder"],
+            "status": "online",
+            "priority": 10,
+            "hub_url": "http://synology.local:10000",
+            "leader_status": "primary",
+            "is_primary": True,
+            "resources": {},
+            "local_queue_depth": 0,
+            "version": "0.1.0",
+            "build_signature": f"schema-{current_version(db.conn)}",
+        }
+    )
+    helper = node_repo.heartbeat(
+        {
+            "node_id": "desktop-helper",
+            "node_role": "helper",
+            "hostname": "desktop",
+            "capabilities": ["watch_files", "rename_plan", "ahk_capture"],
+            "status": "online",
+            "priority": 100,
+            "hub_url": "http://desktop.local:10000",
+            "leader_status": "helper",
+            "is_primary": False,
+            "resources": {},
+            "local_queue_depth": 2,
+            "version": "0.1.0",
+            "build_signature": f"schema-{current_version(db.conn)}",
+        }
+    )
+    help_job = job_repo.create_job(
+        "help_request",
+        {
+            "requested_capability": "rename_plan",
+            "source_node_id": "desktop-helper",
+            "file_path": "D:/Downloads/example.pdf",
+            "folder_path": None,
+            "reason": "watcher cannot safely infer final name",
+            "payload": {"event_type": "created"},
+            "status": "queued",
+        },
+        priority=90,
+    )
+
+    assert primary["role"] == "hub"
+    assert primary["is_primary"] is True
+    assert helper["leader_status"] == "helper"
+    assert node_repo.list_node_status()[0]["node_id"] == "synology-main"
+    assert [capability["name"] for capability in node_repo.list_capabilities()] == [
+        "ahk_capture",
+        "ahk_send",
+        "api_host",
+        "graph_rebuild",
+        "inspect_folder",
+        "nlp_extract",
+        "ocr_image",
+        "react_ui",
+        "rename_plan",
+        "tag_file",
+        "watch_files",
+    ]
+    assert node_repo.nodes_for_capability("rename_plan")[0]["node_id"] == "desktop-helper"
+    assert help_job["type"] == "help_request"
+    assert help_job["status"] == "queued"
+    assert help_job["payload"]["requested_capability"] == "rename_plan"
+
+
+def test_node_and_help_request_route_functions_use_contract(tmp_path, monkeypatch):
+    db_path = tmp_path / "hub.sqlite3"
+
+    from file_intelligence_hub.api import routes_jobs, routes_nodes
+
+    monkeypatch.setattr(routes_jobs, "DEFAULT_DB_PATH", db_path)
+    monkeypatch.setattr(routes_nodes, "DEFAULT_DB_PATH", db_path)
+
+    heartbeat = routes_nodes.local_heartbeat(
+        routes_nodes.NodeHeartbeatRequest(
+            node_id="synology-main",
+            hostname="synology",
+            role="hub",
+            capabilities=["api_host", "watch_files"],
+            status="online",
+            priority=10,
+            hub_url="http://synology.local:10000",
+            leader_status="primary",
+            is_primary=True,
+        )
+    )["node"]
+    capability_nodes = routes_nodes.nodes_for_capability("api_host")["nodes"]
+    help_job = routes_jobs.create_help_request(
+        routes_jobs.HelpRequest(
+            requested_capability="inspect_folder",
+            source_node_id="desktop-helper",
+            folder_path="D:/Downloads",
+            reason="desktop watcher needs deeper folder inspection",
+            payload={"event_type": "modified"},
+        )
+    )["job"]
+
+    assert heartbeat["node_id"] == "synology-main"
+    assert routes_nodes.node_status()["primary"]["node_id"] == "synology-main"
+    assert capability_nodes[0]["node_id"] == "synology-main"
+    assert help_job["type"] == "help_request"
+    assert help_job["payload"]["status"] == "queued"
+
+
 def test_repair_policy_blocks_ledgers_and_secrets():
     policy = RepairPolicy()
 

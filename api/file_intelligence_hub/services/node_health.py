@@ -1,6 +1,7 @@
 """Self-healing node health and safe repair primitives."""
 from __future__ import annotations
 
+import os
 import platform
 import shutil
 from pathlib import Path
@@ -28,13 +29,29 @@ class NodeHealthService:
         self.repo_root = Path(repo_root)
         self.repair_policy = RepairPolicy()
 
-    def heartbeat(self, *, node_role: str = "hub", capabilities: list[str] | None = None) -> dict[str, object]:
+    def heartbeat(
+        self,
+        *,
+        node_role: str = "hub",
+        hostname: str | None = None,
+        capabilities: list[str] | None = None,
+        priority: int = 50,
+        hub_url: str | None = None,
+        leader_status: str = "primary",
+        is_primary: bool = True,
+        status: str | None = None,
+    ) -> dict[str, object]:
         health = self.check_local_health()
         node = {
             "node_id": self.node_id,
             "node_role": node_role,
-            "capabilities": capabilities or ["watcher", "worker", "api", "repair_safe_assets"],
-            "status": health["status"],
+            "hostname": hostname or platform.node(),
+            "capabilities": capabilities or ["api_host", "inspect_folder", "tag_file", "rename_plan"],
+            "status": status or health["status"],
+            "priority": priority,
+            "hub_url": hub_url or os.environ.get("FIHUB_BASE_URL"),
+            "leader_status": leader_status,
+            "is_primary": is_primary,
             "resources": health["resources"],
             "local_queue_depth": health["queue"]["queued"],
             "version": "0.1.0",
@@ -45,9 +62,14 @@ class NodeHealthService:
     def receive_peer_heartbeat(self, payload: dict[str, object]) -> dict[str, object]:
         node = {
             "node_id": str(payload["node_id"]),
-            "node_role": str(payload.get("node_role", "peer")),
+            "node_role": str(payload.get("node_role") or payload.get("role", "peer")),
+            "hostname": str(payload.get("hostname", "")),
             "capabilities": list(payload.get("capabilities", [])),
             "status": str(payload.get("status", "isolated_but_running")),
+            "priority": int(payload.get("priority", 100)),
+            "hub_url": payload.get("hub_url"),
+            "leader_status": str(payload.get("leader_status", "helper")),
+            "is_primary": bool(payload.get("is_primary", False)),
             "resources": dict(payload.get("resources", {})),
             "local_queue_depth": int(payload.get("local_queue_depth", 0)),
             "version": str(payload.get("version", "unknown")),
