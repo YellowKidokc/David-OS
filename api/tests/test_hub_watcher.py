@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-MODULE_PATH = Path(__file__).resolve().parents[3] / "agents" / "watchers" / "hub_watcher.py"
+MODULE_PATH = Path(__file__).resolve().parents[2] / "watchers" / "_candidates" / "hub_watcher.py"
 spec = importlib.util.spec_from_file_location("hub_watcher", MODULE_PATH)
 hub_watcher = importlib.util.module_from_spec(spec)
 assert spec and spec.loader

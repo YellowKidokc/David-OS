@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from typing import Callable
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 BASE_SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -345,6 +345,37 @@ def _migration_11(conn: sqlite3.Connection) -> None:
     conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (11)")
 
 
+def _migration_12(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS clipboard_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            body TEXT NOT NULL,
+            kind TEXT NOT NULL DEFAULT 'text',
+            source_app TEXT,
+            source_window TEXT,
+            folder TEXT,
+            tags TEXT,
+            pinned INTEGER NOT NULL DEFAULT 0,
+            deleted INTEGER NOT NULL DEFAULT 0,
+            copied_at TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS clipboard_items_active
+            ON clipboard_items(deleted, pinned, created_at);
+
+        CREATE TRIGGER IF NOT EXISTS clipboard_items_updated_at
+        AFTER UPDATE ON clipboard_items
+        BEGIN
+            UPDATE clipboard_items SET updated_at = datetime('now') WHERE id = NEW.id;
+        END;
+        """
+    )
+    conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (12)")
+
+
 MIGRATIONS: dict[int, Migration] = {
     2: _migration_2,
     3: _migration_3,
@@ -356,6 +387,7 @@ MIGRATIONS: dict[int, Migration] = {
     9: _migration_9,
     10: _migration_10,
     11: _migration_11,
+    12: _migration_12,
 }
 
 
