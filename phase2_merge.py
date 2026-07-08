@@ -23,9 +23,25 @@ import argparse, hashlib, json, os, shutil, subprocess, sys
 from datetime import datetime
 from pathlib import Path
 
-GH = Path(r"D:\GitHub")
-CANON = GH / "David-OS"
-ARCHIVE = GH / "_ARCHIVE_FIS_20260707"
+DEFAULT_GH = Path(r"D:\GitHub")
+
+def discover_github_root() -> Path:
+    r"""Return the consolidation root for Windows or sandboxed Linux runs.
+
+    The original consolidation target is D:\GitHub. In CI/Codex sandboxes the
+    repos are usually mounted under /workspace, so dry-runs must resolve paths
+    relative to the checked-out David-OS repo instead of crashing while trying
+    to write a manifest under a non-existent Windows path.
+    """
+    if os.environ.get("FIS_GITHUB_ROOT"):
+        return Path(os.environ["FIS_GITHUB_ROOT"])
+    if DEFAULT_GH.exists():
+        return DEFAULT_GH
+    return Path(__file__).resolve().parent.parent
+
+GH = discover_github_root()
+CANON = Path(os.environ.get("FIS_CANON", GH / "David-OS"))
+ARCHIVE = Path(os.environ.get("FIS_ARCHIVE", GH / "_ARCHIVE_FIS_20260707"))
 LOG = CANON / "_PHASE2_MERGE_LOG.jsonl"
 STAMP = "2026-07-07"
 FORBIDDEN = [Path(r"D:\DONT TOUCH BOOT UP")]
@@ -84,6 +100,10 @@ def log(action, src, dst, note=""):
 def assert_safe(p: Path):
     rp = Path(p).resolve()
     for f in FORBIDDEN:
+        # On non-Windows sandboxes this path does not exist; resolving it would
+        # create misleading relative paths like ./D:\DONT TOUCH BOOT UP.
+        if not f.exists():
+            continue
         if str(rp).lower().startswith(str(f.resolve()).lower()):
             sys.exit(f"FATAL: refused to touch forbidden path {rp}")
 
@@ -233,6 +253,7 @@ if __name__ == "__main__":
     for fn in todo:
         fn() if fn is not phase0_freeze else fn(force=a.force)
     manifest = CANON / ("_PHASE2_PLAN.json" if DRY else "_PHASE2_EXECUTED.json")
+    manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(json.dumps(ACTIONS, indent=1), encoding="utf-8")
     missing = [x for x in ACTIONS if x["action"] == "MISSING"]
     print(f"\n{len(ACTIONS)} actions planned -> {manifest.name}; {len(missing)} MISSING sources")
