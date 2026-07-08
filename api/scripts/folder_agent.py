@@ -17,7 +17,7 @@ Run:
 
 Env:
     FIHUB_BASE_URL   default http://127.0.0.1:10000
-    FIHUB_API_TOKEN  sent as X-FIHUB-Token when set
+    FIHUB_API_TOKEN  sent as X-API-Token when set
 """
 from __future__ import annotations
 
@@ -213,7 +213,7 @@ def hub_post(route: str, body: dict) -> tuple[int, str]:
     req = urllib.request.Request(
         BASE_URL + route, data=json.dumps(body).encode("utf-8"),
         headers={"Content-Type": "application/json",
-                 **({"X-FIHUB-Token": API_TOKEN} if API_TOKEN else {})},
+                 **({"X-API-Token": API_TOKEN} if API_TOKEN else {})},
         method="POST")
     try:
         with urllib.request.urlopen(req, timeout=8) as resp:

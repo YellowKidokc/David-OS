@@ -1,0 +1,42 @@
+{
+  "url": "http://localhost:8065",
+  "team_id": "qji1xezoy7rrirbxgpfgqe1och",
+  "team_name": "david-os",
+  "bots": {
+    "opus":   { "token": "kprofcbad7yu9mhm6k7dun9xwc",   "user_id": "1eaf7fu8hjn17xha6pa9hfe8ce" },
+    "codex":  { "token": "jzt8epd99fr13qnuydkzmrhwje" },
+    "kimi":   { "token": "ggwnfmkxeirqbro6ac7supkpja" },
+    "gemini": { "token": "uurrbesqtbbwjjay37angjfzzy" },
+    "gpt":    { "token": "djjqf33tifgsbgox55rhzk115c" },
+    "fabel":  { "token": "fnzwgg7y4tfb5nswyfp8ty4z9w" },
+    "haiku":  { "token": "6qaxt4cowpbx8p17b877feok6r" },
+    "sonnet": { "token": "xifjykg9ibfguc4z45mqpmtnfc" }
+  },
+  "channels": {
+    "broadcast":        "1rysnxojbp86zjar89okb4p1pc",
+    "opus":             "cfkwau31jtymppehake4hh6a3y",
+    "codex":            "jpmazzua43gr8b7cqmrydpg1xo",
+    "kimi":             "g56nrkdcuigyikruytn6bcoe6c",
+    "gemini":           "dwnrssc3kbbrxfpynt5r5gs7ta",
+    "gpt":              "nd96n77i6prx58tdz85kf1dq8r",
+    "fabel":            "545o9mx6jt8fuyu6dusce8ximc",
+    "haiku":            "rshcnpff1jn45dkxw635e4sguo",
+    "sonnet":           "1axxo9wsb3yg9naahq8fjqm1jy",
+    "pipeline":         "qhnypjcdttrb9r6um7by1om5kh",
+    "youtube-intake":   "aq35jiu9ttyxznd1k9hwsf77sy",
+    "knowledge-graph":  "ppwh5h4fnfr7i8cfzawaycysco",
+    "file-intelligence":"pagtgrih87nbxxba4dfrfmfa8y",
+    "session-logs":     "7c65njbacpy9pcdxbk4opqk33c",
+    "level2-site":      "ysrw4tmkkjrsb8u5z7dqqwqjey",
+    "town-square":      "ok8z4bcmrpbfbgg3s4iy9kawua",
+    "off-topic":        "4ebz5h54t7do78xgtnfr3mdwke"
+  },
+  "webhooks": {
+    "broadcast":        "http://localhost:8065/hooks/qgjpztta9bb1bbtibr6brmhdac",
+    "pipeline":         "http://localhost:8065/hooks/ca6xn8h6y7nddcs5eazrq9jrxr",
+    "youtube-intake":   "http://localhost:8065/hooks/xwcezy58cjyg5qfxr6tkaas5wa",
+    "knowledge-graph":  "http://localhost:8065/hooks/booa1bb7hbdfzgptktcdnf4d4w",
+    "file-intelligence":"http://localhost:8065/hooks/1snf8o8773f73y4cudtfg9oqzc",
+    "session-logs":     "http://localhost:8065/hooks/zqneyeygypg6tjfne8ri74qj1e"
+  }
+}

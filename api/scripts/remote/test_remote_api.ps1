@@ -15,7 +15,7 @@ if (-not $Token -and (Test-Path $TokenFile)) {
 
 $headers = @{}
 if ($Token) {
-  $headers["X-FIHUB-Token"] = $Token
+  $headers["X-API-Token"] = $Token
 }
 
 Write-Host "Testing $BaseUrl"

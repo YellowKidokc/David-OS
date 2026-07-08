@@ -1,0 +1,4 @@
+tools/prompt-launcher/.playwright-profile/
+tools/prompt-launcher/node_modules/
+tools/prompt-launcher/research_exports/
+tools/prompt-launcher/config.local.json

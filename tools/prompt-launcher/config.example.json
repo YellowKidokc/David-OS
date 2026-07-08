@@ -1,0 +1,33 @@
+{
+  "targets": {
+    "coding": {
+      "targetUrl": "https://example.com/online-coding-agent",
+      "promptSelectors": [
+        "textarea",
+        "[contenteditable='true']",
+        "[role='textbox']"
+      ],
+      "submitSelectors": [
+        "button[type='submit']",
+        "button:has-text('Send')",
+        "button:has-text('Run')",
+        "button:has-text('Start')"
+      ]
+    },
+    "research": {
+      "targetUrl": "https://example.com/deep-research",
+      "promptSelectors": [
+        "textarea",
+        "[contenteditable='true']",
+        "[role='textbox']"
+      ],
+      "submitSelectors": [
+        "button[type='submit']",
+        "button:has-text('Submit')",
+        "button:has-text('Start research')",
+        "button:has-text('Send')"
+      ]
+    }
+  },
+  "browserProfileDir": ".playwright-profile"
+}

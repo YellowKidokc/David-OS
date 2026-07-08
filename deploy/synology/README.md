@@ -6,6 +6,29 @@ Preferred first path: use Synology Container Manager with `docker-compose.yml`.
 
 Package Center path: use the SPK skeleton under `spk/` after the container path is proven on your NAS.
 
+## Easiest Path: Build A Bundle On Windows
+
+From Windows, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File D:\GitHub\David-OS\deploy\synology\build_bundle.ps1
+```
+
+That creates:
+
+```text
+D:\GitHub\David-OS\deploy\synology\dist\top-of-mind-api
+D:\GitHub\David-OS\deploy\synology\dist\top-of-mind-api-synology-bundle.zip
+```
+
+Copy the folder or zip contents to:
+
+```text
+/volume1/docker/top-of-mind-api
+```
+
+Then follow the start steps in the bundle README.
+
 ## What Runs On Synology
 
 - Top-of-Mind API on port `10000`
@@ -54,7 +77,7 @@ docker-compose up -d --build
 
 ```powershell
 $token = "YOUR_TOKEN"
-Invoke-RestMethod http://SYNOLOGY-IP:10000/jobs/stats -Headers @{ "X-FIHUB-Token" = $token }
+Invoke-RestMethod http://SYNOLOGY-IP:10000/jobs/stats -Headers @{ "X-API-Token" = $token }
 ```
 
 Or run the full headless-hub smoke test:
@@ -133,3 +156,23 @@ Better later: add a scheduled API-safe backup job that uses SQLite backup toolin
 After LAN mode is stable, put Cloudflare Tunnel in front of the Synology service.
 
 Do not expose port `10000` directly to the public internet.
+
+## Permission Fix If Container Manager Cannot Write
+
+If the container starts and then fails because SQLite or `/data` is not writable,
+fix permissions on the Synology folder:
+
+```sh
+mkdir -p /volume1/docker/top-of-mind-api/data
+chmod 775 /volume1/docker/top-of-mind-api/data
+```
+
+If you are using Simple Permission Manager, grant the Container Manager/Docker
+service account read/write access to:
+
+```text
+/volume1/docker/top-of-mind-api
+/volume1/docker/top-of-mind-api/data
+```
+
+The data folder is the only place this container should need to write.

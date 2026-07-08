@@ -12,7 +12,7 @@ if ([string]::IsNullOrWhiteSpace($Token)) {
 }
 
 $BaseUrl = $BaseUrl.TrimEnd("/")
-$headers = @{ "X-FIHUB-Token" = $Token }
+$headers = @{ "X-API-Token" = $Token }
 
 function Invoke-HubJson {
     param(

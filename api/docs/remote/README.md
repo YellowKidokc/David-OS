@@ -46,7 +46,7 @@ Copy the token from the hub machine, then run:
 
 ```powershell
 $token = "PASTE_TOKEN_HERE"
-$headers = @{ "X-FIHUB-Token" = $token }
+$headers = @{ "X-API-Token" = $token }
 
 Invoke-RestMethod -Uri "http://192.168.2.50:10000/jobs/stats" -Headers $headers
 ```
@@ -61,7 +61,7 @@ token := "PASTE_TOKEN_HERE"
 
 http := ComObject("WinHttp.WinHttpRequest.5.1")
 http.Open("GET", baseUrl "/jobs/stats", false)
-http.SetRequestHeader("X-FIHUB-Token", token)
+http.SetRequestHeader("X-API-Token", token)
 http.Send()
 MsgBox http.ResponseText
 ```

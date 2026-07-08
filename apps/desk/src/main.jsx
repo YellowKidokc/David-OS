@@ -20,6 +20,7 @@ const srcId = (s) => s?.id || s?.source_id || s?.name || s?.label;
 const arr = (d, key) => Array.isArray(d) ? d : d?.[key] || [];
 const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
 const OP_FAMILY_KEY = 'topOfMind.operationFamily';
+const API_SHELF_KEY = 'topOfMind.apiShelf.v1';
 const operationFamilies = [
   { id: 'ahk', label: 'AHK', icon: '⌨', group: 'AutoHotkey' },
   { id: 'clipboard', label: 'Clipboard', icon: '⧉', group: 'Clipboard' },
@@ -32,6 +33,72 @@ const operationFamilies = [
   { id: 'hub', label: 'Hub', icon: '◆', group: 'API Calls' },
 ];
 
+const defaultApiShelf = [
+  { id: 'openai', name: 'OpenAI', group: 'AI Models', status: 'needs_key', env: 'OPENAI_API_KEY', owner: 'desktop', docs: 'https://platform.openai.com/docs', prompt: 'Use for Codex, agents, embeddings, and API-backed AI features.' },
+  { id: 'gemini', name: 'Gemini', group: 'Research', status: 'browser', env: 'GEMINI_WEB_SESSION', owner: 'browser', docs: 'https://gemini.google.com', prompt: 'Use for Deep Research capture, export to Docs, and NotebookLM source preparation.' },
+  { id: 'notebooklm', name: 'NotebookLM', group: 'Research', status: 'browser', env: 'NOTEBOOKLM_WEB_SESSION', owner: 'browser', docs: 'https://notebooklm.google.com', prompt: 'Add captured research, vault packs, and grant source packets as notebook sources.' },
+  { id: 'github', name: 'GitHub', group: 'Code + Grants', status: 'configured', env: 'GH_TOKEN / gh auth', owner: 'desktop', docs: 'https://github.com', prompt: 'Push branches, create PR records, preserve research captures, and verify CI.' },
+  { id: 'cloudflare', name: 'Cloudflare', group: 'Website', status: 'needs_review', env: 'CLOUDFLARE_API_TOKEN', owner: 'site', docs: 'https://dash.cloudflare.com', prompt: 'Use for Pages deploys, DNS, R2 media references, and faiththruphysics.com checks.' },
+  { id: 'r2', name: 'R2 Media', group: 'Media', status: 'needs_review', env: 'RCLONE_CONFIG / R2 keys', owner: 'media', docs: 'https://developers.cloudflare.com/r2/', prompt: 'Upload audio, video, podcasts, and large media outside the website repo.' },
+  { id: 'synology', name: 'Synology Hub', group: 'David-OS Nodes', status: 'planned', env: 'DAVID_OS_HUB_URL', owner: 'network', docs: 'http://synology.local:10000', prompt: 'Primary node heartbeat, file watcher coordination, help requests, and backups.' },
+  { id: 'ahk', name: 'AutoHotkey Bridge', group: 'Desktop Control', status: 'planned', env: 'AHK_BRIDGE_URL', owner: 'desktop', docs: 'D:/GitHub/David-OS/ahk', prompt: 'Paste, capture, window targeting, overlays, and desktop command routing.' },
+];
+
+function loadApiShelf() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(API_SHELF_KEY) || '[]');
+    if (Array.isArray(saved) && saved.length) return saved;
+  } catch {}
+  return defaultApiShelf;
+}
+
+function ApiShelfPanel({ setNotice }) {
+  const [items, setItems] = useState(loadApiShelf);
+  const [selectedId, setSelectedId] = useState(items[0]?.id || '');
+  const [filter, setFilter] = useState('');
+  const selected = items.find((item)=>item.id===selectedId) || items[0] || {};
+  const groups = [...new Set(items.map((item)=>item.group || 'Other'))];
+  const visibleItems = items.filter((item)=>[item.name, item.group, item.status, item.env].join(' ').toLowerCase().includes(filter.toLowerCase()));
+  function save(next) {
+    setItems(next);
+    localStorage.setItem(API_SHELF_KEY, JSON.stringify(next));
+  }
+  function patchSelected(patch) {
+    save(items.map((item)=>item.id===selected.id ? { ...item, ...patch } : item));
+  }
+  function addApi() {
+    const id = `api-${Date.now()}`;
+    save([...items, { id, name: 'New API', group: 'Unsorted', status: 'needs_key', env: '', owner: 'desktop', docs: '', prompt: '' }]);
+    setSelectedId(id);
+  }
+  function copyPrompt() {
+    const text = [`API: ${selected.name || ''}`, `Status: ${selected.status || ''}`, `Env/secret slot: ${selected.env || ''}`, `Owner: ${selected.owner || ''}`, '', selected.prompt || ''].join('\n');
+    navigator.clipboard?.writeText?.(text);
+    setNotice(`Copied ${selected.name || 'API'} prompt card.`);
+  }
+  return <section className="api-shelf panel">
+    <div className="api-head"><div><h3>API Shelf</h3><p>Track connectors, setup blanks, docs links, and prompt notes without storing raw API keys here.</p></div><button onClick={addApi}>Add API</button></div>
+    <div className="api-layout">
+      <aside className="api-list">
+        <input value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="Filter APIs"/>
+        {groups.map((group)=><div key={group}><h3>{group}</h3>{visibleItems.filter((item)=>item.group===group).map((item)=><button key={item.id} onClick={()=>setSelectedId(item.id)} className={`api-card ${selected.id===item.id?'selected':''}`}><b>{item.name}</b><span className={`api-status ${item.status}`}>{item.status}</span><small>{item.env || 'no env slot yet'}</small></button>)}</div>)}
+      </aside>
+      <div className="api-detail">
+        <div className="form-grid">
+          <label>Name<input value={selected.name || ''} onChange={(e)=>patchSelected({ name: e.target.value })}/></label>
+          <label>Group<input value={selected.group || ''} onChange={(e)=>patchSelected({ group: e.target.value })}/></label>
+          <label>Status<select value={selected.status || 'needs_key'} onChange={(e)=>patchSelected({ status: e.target.value })}><option value="configured">configured</option><option value="needs_key">needs key</option><option value="needs_review">needs review</option><option value="browser">browser session</option><option value="planned">planned</option><option value="offline">offline</option></select></label>
+          <label>Owner<input value={selected.owner || ''} onChange={(e)=>patchSelected({ owner: e.target.value })}/></label>
+          <label>Env or secret slot<input value={selected.env || ''} onChange={(e)=>patchSelected({ env: e.target.value })} placeholder="OPENAI_API_KEY"/></label>
+          <label>Docs / console link<input value={selected.docs || ''} onChange={(e)=>patchSelected({ docs: e.target.value })}/></label>
+        </div>
+        <label>Prompt / setup note<textarea value={selected.prompt || ''} onChange={(e)=>patchSelected({ prompt: e.target.value })} placeholder="What should this API do inside David-OS?"/></label>
+        <div className="inline"><button onClick={copyPrompt}>Copy prompt card</button>{selected.docs && <button onClick={()=>window.open(selected.docs, '_blank', 'noopener')}>Open docs</button>}<button onClick={()=>setNotice('Secrets should live in env files, OS keychain, GitHub secrets, or provider consoles. Keep this shelf as the map, not the vault.')}>Secret rule</button></div>
+      </div>
+    </div>
+  </section>;
+}
+
 function ApiSettings({ online, setOnline, notice }) {
   const [url, setUrl] = useState(topOfMindApi.baseUrl);
   async function test() {
@@ -42,7 +109,7 @@ function ApiSettings({ online, setOnline, notice }) {
 }
 
 function Sidebar({ folders, selectedFolder, setSelectedFolder, createFolder, active, setActive }) {
-  const sections = ['prompts','agents','models','tools/plugins','knowledge bank','settings'];
+  const sections = ['apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
   const renderFolder = (f, depth = 0) => <div key={f.id || f.folder_id || f.folder_code}><button className="row" style={{'--depth': depth}} onClick={()=>setSelectedFolder(f)}>{depth ? '└' : '▾'} 📁 {f.name || f.title} <small>{f.folder_code}</small></button>{(f.children || []).map((c)=>renderFolder(c, depth + 1))}<button className="chat" style={{'--depth': depth + 1}}>💬 Current routing chat</button></div>;
   return <aside className="sidebar"><button className="new">＋ New Chat</button><input className="search" placeholder="Search Chats"/><h3>Folders</h3>{folders.map((f)=>renderFolder(f))}<button className="row" onClick={createFolder}>＋ Create folder via API</button>{sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>◇ {s}</button>)}</aside>;
 }
@@ -206,7 +273,7 @@ function App() {
   async function patchMessage(id, body){ setMessages(ms=>ms.map(m=>(m.id===id||m.message_id===id)?{...m,...body}:m)); try{ await topOfMindApi.updateMessage(id, body); } catch { setNotice('Local patch shown; API patch failed.'); } }
   async function createFolder(){ const name = prompt('Folder name?'); if(!name) return; try { const f = await topOfMindApi.createFolder({ name, parent_id: selectedFolder.id || selectedFolder.folder_id }); setFolders(fs=>[...fs, f]); } catch { setNotice('Folder must be created by API; request failed.'); } }
   const filtered = useMemo(()=>messages.slice(-75),[messages]);
-  return <div className="app"><nav className="rail"><b>ToM</b>{['chats','memory','files','operator','settings'].map(x=><button className={active===x?'on':''} onClick={()=>setActive(x)} key={x}>{x[0].toUpperCase()}</button>)}</nav><Sidebar folders={folders} selectedFolder={selectedFolder} setSelectedFolder={setSelectedFolder} createFolder={createFolder} active={active} setActive={setActive}/><Funnel sources={sources} setSources={setSources} selectedMessage={selectedMessage} patchMessage={patchMessage} collapsed={funnelCollapsed} setCollapsed={setFunnelCollapsed} activeAgentId={activeAgentId} setActiveAgentId={setActiveAgentId}/><main><header><h1>Top of Mind Desk</h1><span className={`status ${online?'ok':'bad'}`}>{online?'● live':'○ offline'} · {topOfMindApi.baseUrl}</span></header><section className="workspace">{active==='memory' && <SearchPanel title="Memory search" modeToggle onSearch={(q,m)=>topOfMindApi.searchMemory(q,m==='vector'?'vector':undefined)}/>} {active==='files' && <SearchPanel title="File cache search" onSearch={(q)=>topOfMindApi.searchFileCache(q)}/>} {active==='settings' && <ApiSettings online={online} setOnline={setOnline} notice={notice}/>} {active==='operator' && <section className="panel"><h3>Operator drafts</h3><textarea placeholder='{"action":"write_text","path":"notes.txt","text":"draft only"}'/><textarea placeholder='{"action":"append_text","path":"notes.txt","text":"draft only"}'/><button onClick={()=>setNotice('Draft only. Review before sending to /operator/file-actions or /operator/commands.')}>Do not run destructive action</button></section>}<div className="walls">{[1,2,3].map(w=><div className="wall" key={w}><h3>Wall {w}</h3>{filtered.filter((_,i)=>i%3===w-1).map((m,i)=><article onClick={()=>setSelectedMessage(m)} className="msg" key={m.id||m.message_id||i}><b>{m.source_label || m.source || m.source_id || 'source'}</b><p>{m.body || m.content || m.text || m.message}</p><small>{m.role || m.type_code} · {m.folder || m.folder_code}</small></article>)}</div>)}</div></section><footer><ControlBar input={input} setInput={setInput} send={send} selectedSource={selectedSource} selectedFolder={selectedFolder} setNotice={setNotice}/><div className="cmd"><button onClick={()=>topOfMindApi.combine({ folder_code: selectedFolder.folder_code })}>Combine</button><button>Split</button><button>Broadcast</button><button onClick={()=>topOfMindApi.endAll()}>End all</button><span>source_code {selectedSource.source_code}</span><span>folder_code {selectedFolder.folder_code}</span></div><div className="composer"><textarea value={input} onChange={(e)=>setInput(e.target.value)} onKeyDown={(e)=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))send();}} placeholder="Message Top of Mind… Ctrl/⌘+Enter"/><button onClick={send}>Send</button></div></footer></main><OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice}/></div>;
+  return <div className="app"><nav className="rail"><b>ToM</b>{['chats','apis','memory','files','operator','settings'].map(x=><button className={active===x?'on':''} onClick={()=>setActive(x)} key={x}>{x[0].toUpperCase()}</button>)}</nav><Sidebar folders={folders} selectedFolder={selectedFolder} setSelectedFolder={setSelectedFolder} createFolder={createFolder} active={active} setActive={setActive}/><Funnel sources={sources} setSources={setSources} selectedMessage={selectedMessage} patchMessage={patchMessage} collapsed={funnelCollapsed} setCollapsed={setFunnelCollapsed} activeAgentId={activeAgentId} setActiveAgentId={setActiveAgentId}/><main><header><h1>Top of Mind Desk</h1><span className={`status ${online?'ok':'bad'}`}>{online?'● live':'○ offline'} · {topOfMindApi.baseUrl}</span></header><section className="workspace">{active==='apis' && <ApiShelfPanel setNotice={setNotice}/>} {active==='memory' && <SearchPanel title="Memory search" modeToggle onSearch={(q,m)=>topOfMindApi.searchMemory(q,m==='vector'?'vector':undefined)}/>} {active==='files' && <SearchPanel title="File cache search" onSearch={(q)=>topOfMindApi.searchFileCache(q)}/>} {active==='settings' && <ApiSettings online={online} setOnline={setOnline} notice={notice}/>} {active==='operator' && <section className="panel"><h3>Operator drafts</h3><textarea placeholder='{"action":"write_text","path":"notes.txt","text":"draft only"}'/><textarea placeholder='{"action":"append_text","path":"notes.txt","text":"draft only"}'/><button onClick={()=>setNotice('Draft only. Review before sending to /operator/file-actions or /operator/commands.')}>Do not run destructive action</button></section>}<div className="walls">{[1,2,3].map(w=><div className="wall" key={w}><h3>Wall {w}</h3>{filtered.filter((_,i)=>i%3===w-1).map((m,i)=><article onClick={()=>setSelectedMessage(m)} className="msg" key={m.id||m.message_id||i}><b>{m.source_label || m.source || m.source_id || 'source'}</b><p>{m.body || m.content || m.text || m.message}</p><small>{m.role || m.type_code} · {m.folder || m.folder_code}</small></article>)}</div>)}</div></section><footer><ControlBar input={input} setInput={setInput} send={send} selectedSource={selectedSource} selectedFolder={selectedFolder} setNotice={setNotice}/><div className="cmd"><button onClick={()=>topOfMindApi.combine({ folder_code: selectedFolder.folder_code })}>Combine</button><button>Split</button><button>Broadcast</button><button onClick={()=>topOfMindApi.endAll()}>End all</button><span>source_code {selectedSource.source_code}</span><span>folder_code {selectedFolder.folder_code}</span></div><div className="composer"><textarea value={input} onChange={(e)=>setInput(e.target.value)} onKeyDown={(e)=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))send();}} placeholder="Message Top of Mind… Ctrl/⌘+Enter"/><button onClick={send}>Send</button></div></footer></main><OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice}/></div>;
 }
 
 createRoot(document.getElementById('root')).render(<App />);
