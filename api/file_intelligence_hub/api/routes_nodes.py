@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel, Field
 
 from file_intelligence_hub.services.node_health import NodeHealthService
@@ -16,15 +17,24 @@ DEFAULT_DB_PATH = Path(os.environ.get("FIHUB_DB_PATH", ".data/file-intelligence-
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
 
-class PeerHeartbeatRequest(BaseModel):
+class NodeHeartbeatRequest(BaseModel):
     node_id: str
-    node_role: str = "peer"
+    hostname: str = ""
+    role: str = "peer"
     capabilities: list[str] = Field(default_factory=list)
     status: str = "isolated_but_running"
+    priority: int = Field(default=100, ge=0)
+    hub_url: str | None = None
+    leader_status: Literal["primary", "backup", "helper"] = "helper"
+    is_primary: bool = False
     resources: dict[str, object] = Field(default_factory=dict)
     local_queue_depth: int = 0
     version: str = "unknown"
     build_signature: str = "unknown"
+
+
+class PeerHeartbeatRequest(NodeHeartbeatRequest):
+    node_role: str | None = None
 
 
 class RepairRequest(BaseModel):
@@ -39,7 +49,9 @@ def _service(node_id: str = "local") -> NodeHealthService:
 
 
 @router.post("/heartbeat")
-def local_heartbeat(node_id: str = "local") -> dict[str, object]:
+def local_heartbeat(request: NodeHeartbeatRequest | None = Body(default=None), node_id: str = "local") -> dict[str, object]:
+    if request is not None:
+        return {"node": _service().receive_peer_heartbeat(request.model_dump())}
     return {"node": _service(node_id).heartbeat()}
 
 
@@ -57,6 +69,26 @@ def local_health(node_id: str = "local") -> dict[str, object]:
 def list_nodes() -> dict[str, object]:
     db = Database(DEFAULT_DB_PATH)
     return {"nodes": NodeRepo(db.conn).list_nodes()}
+
+
+@router.get("/status")
+def node_status() -> dict[str, object]:
+    db = Database(DEFAULT_DB_PATH)
+    nodes = NodeRepo(db.conn).list_node_status()
+    primary = next((node for node in nodes if node["is_primary"] or node["leader_status"] == "primary"), None)
+    return {"primary": primary, "nodes": nodes}
+
+
+@router.get("/capabilities")
+def list_capabilities() -> dict[str, object]:
+    db = Database(DEFAULT_DB_PATH)
+    return {"capabilities": NodeRepo(db.conn).list_capabilities()}
+
+
+@router.get("/capabilities/{capability}/nodes")
+def nodes_for_capability(capability: str) -> dict[str, object]:
+    db = Database(DEFAULT_DB_PATH)
+    return {"capability": capability, "nodes": NodeRepo(db.conn).nodes_for_capability(capability)}
 
 
 @router.post("/repair/safe-artifact")

@@ -33,6 +33,17 @@ class FolderSummaryRequest(BaseModel):
     folder_path: str
 
 
+class HelpRequest(BaseModel):
+    requested_capability: str
+    source_node_id: str
+    file_path: str | None = None
+    folder_path: str | None = None
+    reason: str
+    payload: dict[str, object] = Field(default_factory=dict)
+    status: str = "queued"
+    priority: int = Field(default=90, ge=0)
+
+
 def _repo() -> JobRepo:
     db = Database(DEFAULT_DB_PATH)
     return JobRepo(db.conn)
@@ -48,6 +59,17 @@ def create_file_event(request: FileEventRequest) -> dict[str, object]:
 @router.post("/jobs/folder-summaries")
 def create_folder_summary_job(request: FolderSummaryRequest) -> dict[str, object]:
     return _repo().create_job("folder_summary", {"folder_path": request.folder_path})
+
+
+@router.post("/jobs/help-requests")
+def create_help_request(request: HelpRequest) -> dict[str, object]:
+    if not request.file_path and not request.folder_path:
+        raise HTTPException(status_code=400, detail="file_path or folder_path is required")
+    if request.status != "queued":
+        raise HTTPException(status_code=400, detail="help_request jobs must be created with status='queued'")
+    payload = request.model_dump()
+    payload["status"] = "queued"
+    return {"job": _repo().create_job("help_request", payload, priority=request.priority)}
 
 
 @router.get("/jobs")
