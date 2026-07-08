@@ -30,6 +30,7 @@ yourself duplicating a file "temporarily," stop. There is no temporarily.
 | 4 | `engine\` | inline below | Wire theophysics-fis ensemble to hub job types. |
 | 5 | `apps\desk\` | inline below | React app -> canonical api endpoints. |
 | 6 | `pipeline\` | inline below | Intake/scoring scripts -> hub job cards. |
+| 7 | `graphs\` | graphs\CODEX_BUILD_PROMPT.md | The Second Brain: evidence edges, anti-edges, brain.py retrieval, one renderer. |
 
 After each folder: run its Tests section, commit with message
 `codex: <folder> — <what>`, post one-paragraph summary to town-square,
