@@ -7,7 +7,7 @@ name = "file-intelligence-hub"
 version = "0.1.0"
 description = "Control plane for file-first automation"
 requires-python = ">=3.11"
-dependencies = ["fastapi>=0.110", "pydantic>=2", "uvicorn>=0.29", "watchdog>=4"]
+dependencies = ["fastapi>=0.110", "pydantic>=2", "uvicorn>=0.29", "watchdog>=4", "openpyxl>=3.1"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
