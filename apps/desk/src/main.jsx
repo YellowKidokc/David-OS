@@ -33,51 +33,136 @@ const srcName = (s) => s?.name || s?.label || s?.source_id || s?.id || 'source';
 const srcId = (s) => s?.id || s?.source_id || s?.name || s?.label;
 const arr = (d, key) => Array.isArray(d) ? d : d?.[key] || [];
 
-// ---- API Shelf (unchanged from original) ----
-const defaultApiShelf = [
-  { id: 'openai', name: 'OpenAI', group: 'AI Models', status: 'needs_key', env: 'OPENAI_API_KEY', owner: 'desktop', docs: 'https://platform.openai.com/docs', prompt: 'Use for Codex, agents, embeddings, and API-backed AI features.' },
-  { id: 'gemini', name: 'Gemini', group: 'Research', status: 'browser', env: 'GEMINI_WEB_SESSION', owner: 'browser', docs: 'https://gemini.google.com', prompt: 'Use for Deep Research capture, export to Docs, and NotebookLM source preparation.' },
-  { id: 'notebooklm', name: 'NotebookLM', group: 'Research', status: 'browser', env: 'NOTEBOOKLM_WEB_SESSION', owner: 'browser', docs: 'https://notebooklm.google.com', prompt: 'Add captured research, vault packs, and grant source packets as notebook sources.' },
-  { id: 'github', name: 'GitHub', group: 'Code + Grants', status: 'configured', env: 'GH_TOKEN / gh auth', owner: 'desktop', docs: 'https://github.com', prompt: 'Push branches, create PR records, preserve research captures, and verify CI.' },
-  { id: 'cloudflare', name: 'Cloudflare', group: 'Website', status: 'needs_review', env: 'CLOUDFLARE_API_TOKEN', owner: 'site', docs: 'https://dash.cloudflare.com', prompt: 'Use for Pages deploys, DNS, R2 media references, and faiththruphysics.com checks.' },
-  { id: 'r2', name: 'R2 Media', group: 'Media', status: 'needs_review', env: 'RCLONE_CONFIG / R2 keys', owner: 'media', docs: 'https://developers.cloudflare.com/r2/', prompt: 'Upload audio, video, podcasts, and large media outside the website repo.' },
-  { id: 'synology', name: 'Synology Hub', group: 'David-OS Nodes', status: 'planned', env: 'DAVID_OS_HUB_URL', owner: 'network', docs: 'http://synology.local:10000', prompt: 'Primary node heartbeat, file watcher coordination, help requests, and backups.' },
-  { id: 'ahk', name: 'AutoHotkey Bridge', group: 'Desktop Control', status: 'planned', env: 'AHK_BRIDGE_URL', owner: 'desktop', docs: 'D:/GitHub/David-OS/ahk', prompt: 'Paste, capture, window targeting, overlays, and desktop command routing.' },
-];
-function loadApiShelf() {
-  try { const saved = JSON.parse(localStorage.getItem(API_SHELF_KEY) || '[]'); if (Array.isArray(saved) && saved.length) return saved; } catch {}
-  return defaultApiShelf;
+// ---- API Registry ----
+const API_REGISTRY_KEY = 'topOfMind.apiRegistry.v1';
+
+const apiRegistryCategories = {
+  file_system: {
+    label: 'File System',
+    icon: '▣',
+    aliases: ['filesystem', 'file', 'fis'],
+    apis: [
+      { id: 'fis_intake', name: 'Intake Router', endpoint: 'POST /fis/intake', desc: 'Route files to correct locations', status: 'configured', icon: '⇄', params: ['source_folder'] },
+      { id: 'fis_neardup', name: 'Near-Dup Scanner', endpoint: 'POST /fis/neardup', desc: 'Find duplicate and similar files', status: 'configured', icon: '≋', params: [] },
+      { id: 'fis_crossfolder', name: 'Cross-Folder Scan', endpoint: 'POST /fis/crossfolder', desc: 'Structural fingerprint comparison', status: 'configured', icon: '⌘', params: ['folders'] },
+      { id: 'fis_classify', name: 'Classify File', endpoint: 'POST /fis/classify', desc: 'Domain classification for a single file', status: 'configured', icon: '◇', params: ['file_path'] },
+      { id: 'file_actions', name: 'File Actions', endpoint: 'POST /operator/file-actions', desc: 'Write, append, delete with review gate', status: 'active', icon: '✎', params: ['action', 'path', 'text'] },
+      { id: 'folders', name: 'Folder Profiles', endpoint: 'GET /folders', desc: 'List and manage watched folders', status: 'active', icon: '📁', params: [] },
+    ],
+  },
+  communication: {
+    label: 'Communication',
+    icon: '✉',
+    aliases: ['comm', 'communications', 'chat'],
+    apis: [
+      { id: 'mattermost_send', name: 'Send Message', endpoint: 'POST /mattermost/send', desc: 'Send to a Mattermost channel', status: 'needs_key', icon: '→', params: ['channel', 'message'] },
+      { id: 'mattermost_broadcast', name: 'Broadcast', endpoint: 'POST /mattermost/broadcast', desc: 'Send to all AI channels', status: 'needs_key', icon: '☊', params: ['message'] },
+      { id: 'mattermost_unread', name: 'Unread Count', endpoint: 'GET /mattermost/unread', desc: 'Check unread per channel', status: 'needs_key', icon: '#', params: [] },
+      { id: 'messages', name: 'Hub Messages', endpoint: 'GET /messages', desc: 'Read/write hub message stream', status: 'active', icon: '☰', params: ['limit'] },
+      { id: 'clipboard', name: 'Clipboard', endpoint: 'POST /clipboard/save', desc: 'Save/push clipboard content', status: 'active', icon: '⧉', params: ['text'] },
+    ],
+  },
+  ai_models: {
+    label: 'AI Models',
+    icon: '◎',
+    aliases: ['ai', 'models', 'model'],
+    apis: [
+      { id: 'openai', name: 'OpenAI', endpoint: 'External', desc: 'GPT, embeddings, agents', status: 'needs_key', icon: '◌', env: 'OPENAI_API_KEY', docs: 'https://platform.openai.com/docs' },
+      { id: 'anthropic', name: 'Anthropic', endpoint: 'External', desc: 'Claude API', status: 'needs_key', icon: '◍', env: 'ANTHROPIC_API_KEY' },
+      { id: 'gemini', name: 'Google Gemini', endpoint: 'External', desc: 'Deep research, NotebookLM', status: 'needs_key', icon: '✦', env: 'GEMINI_API_KEY', docs: 'https://gemini.google.com' },
+      { id: 'deepseek', name: 'DeepSeek', endpoint: 'External', desc: 'Station 17 pipeline', status: 'needs_key', icon: '◆', env: 'DEEPSEEK_API_KEY' },
+      { id: 'ollama', name: 'Ollama', endpoint: 'http://192.168.2.50:11434', desc: 'Local LLM inference', status: 'offline', icon: '●' },
+      { id: 'notebooklm', name: 'NotebookLM', endpoint: 'External', desc: 'Research notebooks and source packs', status: 'needs_key', icon: '▤', docs: 'https://notebooklm.google.com' },
+    ],
+  },
+  nlp: {
+    label: 'NLP Pipeline',
+    icon: '∑',
+    aliases: ['nlp', 'semantic'],
+    apis: [
+      { id: 'backside_nlp', name: 'BACKSIDE NLP', endpoint: 'http://192.168.2.50:8700', desc: 'Local model API (SBERT, DeBERTa, BART)', status: 'offline', icon: 'β' },
+      { id: 'intelligence', name: 'Intelligence', endpoint: 'GET /intelligence/files', desc: 'File records and folder summaries', status: 'active', icon: 'ℹ', params: ['q'] },
+      { id: 'semantic', name: 'Semantic Search', endpoint: 'POST /semantic/search', desc: 'Vector similarity search', status: 'configured', icon: '⌕', params: ['query'] },
+      { id: 'fis_classify_nlp', name: 'Classify File', endpoint: 'POST /fis/classify', desc: 'Domain classification via FIS', status: 'configured', icon: '◇', params: ['file_path'] },
+    ],
+  },
+  storage: {
+    label: 'Storage',
+    icon: '▰',
+    aliases: ['storage', 'store'],
+    apis: [
+      { id: 'synology', name: 'Synology NAS', endpoint: 'http://192.168.2.50:5000', desc: 'NAS storage and Docker management', status: 'offline', icon: '▥' },
+      { id: 'r2', name: 'Cloudflare R2', endpoint: 'External', desc: 'Media bucket storage', status: 'needs_key', icon: '☁', env: 'R2 keys', docs: 'https://developers.cloudflare.com/r2/' },
+      { id: 'postgres', name: 'PostgreSQL', endpoint: '192.168.2.50:5432', desc: 'Axiom database, canonical nodes', status: 'offline', icon: '⬢' },
+      { id: 'syncthing', name: 'Syncthing', endpoint: 'http://127.0.0.1:8384', desc: 'File sync between machines', status: 'offline', icon: '↔' },
+      { id: 'cloudflare', name: 'Cloudflare', endpoint: 'External', desc: 'Pages deploys, DNS, and R2 console', status: 'needs_key', icon: '☁', env: 'CLOUDFLARE_API_TOKEN', docs: 'https://dash.cloudflare.com' },
+    ],
+  },
+  desktop: {
+    label: 'Desktop Control',
+    icon: '⌨',
+    aliases: ['desktop', 'control', 'operator'],
+    apis: [
+      { id: 'ahk_bridge', name: 'AHK Bridge', endpoint: 'POST /bridge/jobs', desc: 'Paste, send, overlay control', status: 'active', icon: '⌨', env: 'AHK_BRIDGE_URL', params: ['action', 'payload'] },
+      { id: 'commands', name: 'Commands', endpoint: 'POST /operator/commands', desc: 'Execute shell commands with review', status: 'active', icon: '>', params: ['command'] },
+      { id: 'agents', name: 'Agent Send', endpoint: 'POST /agents/send', desc: 'Route messages to AI agents', status: 'active', icon: '◎', params: ['target', 'message'] },
+    ],
+  },
+};
+
+const flattenApiRegistry = (cats) => Object.entries(cats).flatMap(([categoryId, category]) => category.apis.map((api) => ({ ...api, categoryId, category: category.label })));
+const apiRegistryItems = flattenApiRegistry(apiRegistryCategories);
+
+function loadCustomApis() {
+  try { const saved = JSON.parse(localStorage.getItem(API_REGISTRY_KEY) || '[]'); return Array.isArray(saved) ? saved : []; } catch { return []; }
 }
+
+function endpointParts(endpoint = '') {
+  const match = endpoint.match(/^(GET|POST|PATCH|PUT|DELETE)\s+(.+)$/i);
+  return match ? { method: match[1].toUpperCase(), path: match[2] } : { method: 'EXTERNAL', path: endpoint };
+}
+
 function ApiShelfPanel({ setNotice }) {
-  const [items, setItems] = useState(loadApiShelf);
-  const [selectedId, setSelectedId] = useState(items[0]?.id || '');
+  const [customApis, setCustomApis] = useState(loadCustomApis);
+  const [selectedCategory, setSelectedCategory] = useState('file_system');
+  const [selectedId, setSelectedId] = useState('fis_intake');
   const [filter, setFilter] = useState('');
-  const selected = items.find((item)=>item.id===selectedId) || items[0] || {};
-  const groups = [...new Set(items.map((item)=>item.group || 'Other'))];
-  const visibleItems = items.filter((item)=>[item.name, item.group, item.status, item.env].join(' ').toLowerCase().includes(filter.toLowerCase()));
-  function save(next) { setItems(next); localStorage.setItem(API_SHELF_KEY, JSON.stringify(next)); }
-  function patchSelected(patch) { save(items.map((item)=>item.id===selected.id ? { ...item, ...patch } : item)); }
-  function addApi() { const id = `api-${Date.now()}`; save([...items, { id, name: 'New API', group: 'Unsorted', status: 'needs_key', env: '', owner: 'desktop', docs: '', prompt: '' }]); setSelectedId(id); }
-  function copyPrompt() { const text = [`API: ${selected.name || ''}`, `Status: ${selected.status || ''}`, `Env/secret slot: ${selected.env || ''}`, `Owner: ${selected.owner || ''}`, '', selected.prompt || ''].join('\n'); navigator.clipboard?.writeText?.(text); setNotice(`Copied ${selected.name || 'API'} prompt card.`); }
-  return <section className="api-shelf panel">
-    <div className="api-head"><div><h3>API Shelf</h3><p>Track connectors, setup blanks, docs links, and prompt notes without storing raw API keys here.</p></div><button onClick={addApi}>Add API</button></div>
-    <div className="api-layout">
-      <aside className="api-list">
-        <input value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="Filter APIs"/>
-        {groups.map((group)=><div key={group}><h3>{group}</h3>{visibleItems.filter((item)=>item.group===group).map((item)=><button key={item.id} onClick={()=>setSelectedId(item.id)} className={`api-card ${selected.id===item.id?'selected':''}`}><b>{item.name}</b><span className={`api-status ${item.status}`}>{item.status}</span><small>{item.env || 'no env slot yet'}</small></button>)}</div>)}
-      </aside>
-      <div className="api-detail">
-        <div className="form-grid">
-          <label>Name<input value={selected.name || ''} onChange={(e)=>patchSelected({ name: e.target.value })}/></label>
-          <label>Group<input value={selected.group || ''} onChange={(e)=>patchSelected({ group: e.target.value })}/></label>
-          <label>Status<select value={selected.status || 'needs_key'} onChange={(e)=>patchSelected({ status: e.target.value })}><option value="configured">configured</option><option value="needs_key">needs key</option><option value="needs_review">needs review</option><option value="browser">browser session</option><option value="planned">planned</option><option value="offline">offline</option></select></label>
-          <label>Owner<input value={selected.owner || ''} onChange={(e)=>patchSelected({ owner: e.target.value })}/></label>
-          <label>Env or secret slot<input value={selected.env || ''} onChange={(e)=>patchSelected({ env: e.target.value })} placeholder="OPENAI_API_KEY"/></label>
-          <label>Docs / console link<input value={selected.docs || ''} onChange={(e)=>patchSelected({ docs: e.target.value })}/></label>
-        </div>
-        <label>Prompt / setup note<textarea value={selected.prompt || ''} onChange={(e)=>patchSelected({ prompt: e.target.value })} placeholder="What should this API do inside David-OS?"/></label>
-        <div className="inline"><button onClick={copyPrompt}>Copy prompt card</button>{selected.docs && <button onClick={()=>window.open(selected.docs, '_blank', 'noopener')}>Open docs</button>}<button onClick={()=>setNotice('Secrets should live in env files, OS keychain, GitHub secrets, or provider consoles. Keep this shelf as the map, not the vault.')}>Secret rule</button></div>
-      </div>
+  const [tryBody, setTryBody] = useState('{}');
+  const [urlFormOpen, setUrlFormOpen] = useState(false);
+  const [urlDraft, setUrlDraft] = useState('');
+  const allItems = [...apiRegistryItems, ...customApis];
+  const visibleItems = allItems.filter((item) => (selectedCategory === 'all' || item.categoryId === selectedCategory) && [item.name, item.category, item.status, item.endpoint, item.desc].join(' ').toLowerCase().includes(filter.toLowerCase()));
+  const selected = allItems.find((item)=>item.id===selectedId) || visibleItems[0] || allItems[0];
+  const parts = endpointParts(selected?.endpoint);
+  const saveCustom = (next) => { setCustomApis(next); localStorage.setItem(API_REGISTRY_KEY, JSON.stringify(next)); };
+  const copyApi = async (api = selected) => {
+    const text = JSON.stringify({ id: api.id, name: api.name, category: api.category, status: api.status, endpoint: api.endpoint, description: api.desc, parameters: api.params || [], env: api.env || '', docs: api.docs || '' }, null, 2);
+    await navigator.clipboard?.writeText?.('```json\n' + text + '\n```');
+    setNotice(`Copied ${api.name} API spec.`);
+  };
+  const addUrlApi = () => {
+    const url = urlDraft.trim();
+    if (!url) return;
+    const id = `custom-${Date.now()}`;
+    const api = { id, name: new URL(url).hostname || 'Imported API', categoryId: 'custom', category: 'Imported', status: 'needs_key', endpoint: url, desc: 'Imported docs/spec URL — extraction pending', icon: '+', docs: url, params: [] };
+    saveCustom([...customApis, api]);
+    setSelectedCategory('all'); setSelectedId(id); setUrlDraft(''); setUrlFormOpen(false); setNotice('Added API URL card. Auto-extraction is next.');
+  };
+  const tryEndpoint = async () => {
+    try {
+      if (!parts.path?.startsWith('/')) throw new Error('External endpoint; open docs instead.');
+      const body = parts.method === 'GET' ? undefined : JSON.parse(tryBody || '{}');
+      const result = await topOfMindApi.requestRaw(parts.path, { method: parts.method, ...(body ? { body: JSON.stringify(body) } : {}) });
+      setNotice(`${selected.name}: ${result?.status || 'request completed'}`);
+    } catch (e) { setNotice(`${selected.name}: ${e.message}`); }
+  };
+  return <section className="api-registry panel">
+    <div className="api-registry-head"><div><h3>API Registry</h3><p>Browse hub routes, external connectors, status, parameters, and copy-ready endpoint context.</p></div><div className="inline"><button onClick={()=>setUrlFormOpen(!urlFormOpen)}>Add API from URL</button><button onClick={()=>copyApi(selected)}>Copy selected API</button></div></div>
+    {urlFormOpen && <div className="api-url-form"><input value={urlDraft} onChange={(e)=>setUrlDraft(e.target.value)} placeholder="https://example.com/openapi.json or docs page"/><button onClick={addUrlApi}>Create card</button></div>}
+    <div className="api-browser">
+      <aside className="api-categories"><button className={selectedCategory==='all'?'selected':''} onClick={()=>setSelectedCategory('all')}>All APIs <span>{allItems.length}</span></button>{Object.entries(apiRegistryCategories).map(([id, cat])=><button key={id} className={selectedCategory===id?'selected':''} onClick={()=>setSelectedCategory(id)}><span>{cat.icon} {cat.label}</span><small>{cat.apis.length}</small></button>)}{customApis.length > 0 && <button className={selectedCategory==='custom'?'selected':''} onClick={()=>setSelectedCategory('custom')}>+ Imported <small>{customApis.length}</small></button>}</aside>
+      <section className="api-grid-panel"><input className="api-search" value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="Search APIs, endpoints, categories…"/><div className="api-card-grid">{visibleItems.map((api)=><article key={api.id} className={`api-browser-card ${selected?.id===api.id?'selected':''}`}><div className="api-card-top"><span className="api-icon">{api.icon || '◆'}</span><div><b>{api.name}</b><small>{api.category}</small></div><span className={`api-status ${api.status}`}>{(api.status || 'offline').replace('_',' ')}</span></div><p>{api.desc}</p><div className="api-endpoint"><code>{api.endpoint}</code></div><div className="api-card-actions"><button onClick={()=>{setSelectedId(api.id); setTryBody(JSON.stringify(Object.fromEntries((api.params || []).map((p)=>[p, ''])), null, 2));}}>Use</button><button onClick={()=>copyApi(api)}>Copy</button></div></article>)}</div></section>
+      <aside className="api-detail-panel"><h3>Endpoint detail</h3>{selected ? <><div className="api-detail-title"><span className="api-icon large">{selected.icon || '◆'}</span><div><b>{selected.name}</b><small>{selected.category} · {selected.status}</small></div></div><p>{selected.desc}</p><label>Endpoint<input readOnly value={selected.endpoint || ''}/></label><label>Parameters<textarea readOnly value={JSON.stringify(selected.params || [], null, 2)}/></label><label>Try it body<textarea value={tryBody} onChange={(e)=>setTryBody(e.target.value)} placeholder='{"path":"D:/..."}'/></label><div className="inline"><button onClick={tryEndpoint}>Try endpoint</button><button onClick={()=>copyApi(selected)}>Copy API</button>{selected.docs && <button onClick={()=>window.open(selected.docs, '_blank', 'noopener')}>Open docs</button>}</div><small className="api-hint">GET routes ignore the body. External endpoints open/copy as context only.</small></> : <p>Select an API card.</p>}</aside>
     </div>
   </section>;
 }
@@ -244,9 +329,34 @@ function App() {
 
   const selectedSource = sources.find((source)=>srcId(source)===activeAgentId) || sources[0] || fallbackSources[0];
 
+  async function runApiSlashCommand(text) {
+    const tokens = text.match(/"[^"]*"|'[^']*'|\S+/g)?.map((token) => token.replace(/^['"]|['"]$/g, '')) || [];
+    const [, category, action, ...args] = tokens;
+    const cat = (category || '').toLowerCase();
+    const act = (action || '').toLowerCase();
+    const comm = cat === 'comm' || cat === 'communication';
+    if ((cat === 'filesystem' || cat === 'file_system' || cat === 'fis') && act === 'intake') return topOfMindApi.fisIntake({ source_folder: args[0] || '' });
+    if ((cat === 'filesystem' || cat === 'file_system' || cat === 'fis') && act === 'neardup') return topOfMindApi.fisNearDup({});
+    if ((cat === 'nlp' || cat === 'filesystem' || cat === 'fis') && act === 'classify') return topOfMindApi.fisClassify({ file_path: args[0] || '' });
+    if (comm && act === 'send') return topOfMindApi.mattermostSend({ channel: args[0] || 'codex', message: args.slice(1).join(' ') });
+    if (comm && act === 'broadcast') return topOfMindApi.mattermostBroadcast({ message: args.join(' ') });
+    throw new Error('Unknown /api command. Try /api filesystem intake <source_folder>, /api comm send codex "message", or /api nlp classify <file_path>.');
+  }
+
   // Send message
   async function send() {
     if (!input.trim()) return;
+    if (input.trim().toLowerCase().startsWith('/api ')) {
+      const commandText = input.trim();
+      setInput('');
+      try {
+        const result = await runApiSlashCommand(commandText);
+        setNotice(`API command ran: ${result?.status || commandText}`);
+      } catch (e) {
+        setNotice(e.message);
+      }
+      return;
+    }
     const payload = {
       source_id: srcId(selectedSource),
       source_label: srcName(selectedSource),
