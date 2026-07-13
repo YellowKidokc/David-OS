@@ -30,7 +30,6 @@ export function RightHub({
 
   return (
     <>
-      {/* Collapsed bar */}
       {collapsed && (
         <aside className="right-hub-collapsed">
           <button
@@ -59,10 +58,8 @@ export function RightHub({
         </aside>
       )}
 
-      {/* Expanded panel */}
       {!collapsed && (
         <aside className="right-hub">
-          {/* Hub header */}
           <div className="rh-header">
             <div className="rh-tabs">
               {TABS.map((tab) => {
@@ -90,7 +87,6 @@ export function RightHub({
             </button>
           </div>
 
-          {/* Hub content */}
           <div className="rh-content">
             {activeTab === 'chat' && (
               <MultiChatLayout
