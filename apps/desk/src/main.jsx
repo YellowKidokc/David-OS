@@ -144,9 +144,16 @@ function ApiShelfPanel({ setNotice }) {
     const url = urlDraft.trim();
     if (!url) return;
     const id = `custom-${Date.now()}`;
-    const api = { id, name: new URL(url).hostname || 'Imported API', categoryId: 'custom', category: 'Imported', status: 'needs_key', endpoint: url, desc: 'Imported docs/spec URL — extraction pending', icon: '+', docs: url, params: [] };
+    let host = 'Imported API';
+    try { host = new URL(url).hostname || host; } catch { host = url.replace(/^https?:\/\//, '').split('/')[0] || host; }
+    const api = { id, name: host, categoryId: 'custom', category: 'Imported', status: 'needs_key', endpoint: url, desc: 'Imported docs/spec URL — extraction pending', icon: '+', docs: url, params: [] };
     saveCustom([...customApis, api]);
     setSelectedCategory('all'); setSelectedId(id); setUrlDraft(''); setUrlFormOpen(false); setNotice('Added API URL card. Auto-extraction is next.');
+  };
+  const copyVisibleApis = async () => {
+    const text = JSON.stringify(visibleItems.map((api) => ({ id: api.id, name: api.name, category: api.category, status: api.status, endpoint: api.endpoint, description: api.desc, parameters: api.params || [] })), null, 2);
+    await navigator.clipboard?.writeText?.('```json\n' + text + '\n```');
+    setNotice(`Copied ${visibleItems.length} API specs.`);
   };
   const tryEndpoint = async () => {
     try {
@@ -156,13 +163,66 @@ function ApiShelfPanel({ setNotice }) {
       setNotice(`${selected.name}: ${result?.status || 'request completed'}`);
     } catch (e) { setNotice(`${selected.name}: ${e.message}`); }
   };
-  return <section className="api-registry panel">
-    <div className="api-registry-head"><div><h3>API Registry</h3><p>Browse hub routes, external connectors, status, parameters, and copy-ready endpoint context.</p></div><div className="inline"><button onClick={()=>setUrlFormOpen(!urlFormOpen)}>Add API from URL</button><button onClick={()=>copyApi(selected)}>Copy selected API</button></div></div>
-    {urlFormOpen && <div className="api-url-form"><input value={urlDraft} onChange={(e)=>setUrlDraft(e.target.value)} placeholder="https://example.com/openapi.json or docs page"/><button onClick={addUrlApi}>Create card</button></div>}
-    <div className="api-browser">
-      <aside className="api-categories"><button className={selectedCategory==='all'?'selected':''} onClick={()=>setSelectedCategory('all')}>All APIs <span>{allItems.length}</span></button>{Object.entries(apiRegistryCategories).map(([id, cat])=><button key={id} className={selectedCategory===id?'selected':''} onClick={()=>setSelectedCategory(id)}><span>{cat.icon} {cat.label}</span><small>{cat.apis.length}</small></button>)}{customApis.length > 0 && <button className={selectedCategory==='custom'?'selected':''} onClick={()=>setSelectedCategory('custom')}>+ Imported <small>{customApis.length}</small></button>}</aside>
-      <section className="api-grid-panel"><input className="api-search" value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="Search APIs, endpoints, categories…"/><div className="api-card-grid">{visibleItems.map((api)=><article key={api.id} className={`api-browser-card ${selected?.id===api.id?'selected':''}`}><div className="api-card-top"><span className="api-icon">{api.icon || '◆'}</span><div><b>{api.name}</b><small>{api.category}</small></div><span className={`api-status ${api.status}`}>{(api.status || 'offline').replace('_',' ')}</span></div><p>{api.desc}</p><div className="api-endpoint"><code>{api.endpoint}</code></div><div className="api-card-actions"><button onClick={()=>{setSelectedId(api.id); setTryBody(JSON.stringify(Object.fromEntries((api.params || []).map((p)=>[p, ''])), null, 2));}}>Use</button><button onClick={()=>copyApi(api)}>Copy</button></div></article>)}</div></section>
-      <aside className="api-detail-panel"><h3>Endpoint detail</h3>{selected ? <><div className="api-detail-title"><span className="api-icon large">{selected.icon || '◆'}</span><div><b>{selected.name}</b><small>{selected.category} · {selected.status}</small></div></div><p>{selected.desc}</p><label>Endpoint<input readOnly value={selected.endpoint || ''}/></label><label>Parameters<textarea readOnly value={JSON.stringify(selected.params || [], null, 2)}/></label><label>Try it body<textarea value={tryBody} onChange={(e)=>setTryBody(e.target.value)} placeholder='{"path":"D:/..."}'/></label><div className="inline"><button onClick={tryEndpoint}>Try endpoint</button><button onClick={()=>copyApi(selected)}>Copy API</button>{selected.docs && <button onClick={()=>window.open(selected.docs, '_blank', 'noopener')}>Open docs</button>}</div><small className="api-hint">GET routes ignore the body. External endpoints open/copy as context only.</small></> : <p>Select an API card.</p>}</aside>
+  return <section className="tm-page api-registry-page">
+    <div className="tm-page-head">
+      <div>
+        <h1>API Registry</h1>
+        <p>Browse hub routes, external connectors, local models, storage, and desktop controls.</p>
+      </div>
+      <div className="tm-head-actions">
+        <button className="tm-primary" onClick={()=>setUrlFormOpen(!urlFormOpen)}>＋ Add API from URL</button>
+        <button className="tm-secondary" onClick={copyVisibleApis}>Copy visible APIs</button>
+        <button className="tm-secondary" onClick={()=>copyApi(selected)}>Copy selected</button>
+      </div>
+    </div>
+
+    {urlFormOpen && <div className="tm-url-bar"><input value={urlDraft} onChange={(e)=>setUrlDraft(e.target.value)} placeholder="https://example.com/openapi.json or docs page"/><button className="tm-primary" onClick={addUrlApi}>Create card</button></div>}
+
+    <div className="tm-api-shell">
+      <aside className="tm-api-sidebar">
+        <div className="tm-side-section">Store</div>
+        <button className={selectedCategory==='all'?'selected':''} onClick={()=>setSelectedCategory('all')}><span className="tm-side-icon">⌘</span><span>All APIs</span><b>{allItems.length}</b></button>
+        <div className="tm-side-section">Categories</div>
+        {Object.entries(apiRegistryCategories).map(([id, cat])=><button key={id} className={selectedCategory===id?'selected':''} onClick={()=>setSelectedCategory(id)}><span className="tm-side-icon">{cat.icon}</span><span>{cat.label}</span><b>{cat.apis.length}</b></button>)}
+        {customApis.length > 0 && <><div className="tm-side-section">Installed</div><button className={selectedCategory==='custom'?'selected':''} onClick={()=>setSelectedCategory('custom')}><span className="tm-side-icon">＋</span><span>Imported</span><b>{customApis.length}</b></button></>}
+        <div className="tm-side-card"><strong>{visibleItems.length}</strong><span>visible APIs</span><small>Green = active/configured · amber = needs key · red = offline</small></div>
+      </aside>
+
+      <section className="tm-api-main">
+        <div className="tm-toolbar">
+          <div className="tm-search"><span>⌕</span><input value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="Search APIs, endpoints, parameters…"/></div>
+          <button className="tm-icon-button" title="Grid view">▦</button>
+          <button className="tm-sort">↕ Status</button>
+        </div>
+        <div className="tm-card-grid">
+          {visibleItems.map((api)=><article key={api.id} className={`tm-api-card ${selected?.id===api.id?'selected':''}`} onClick={()=>setSelectedId(api.id)}>
+            <div className="tm-card-body">
+              <span className="tm-api-avatar">{api.icon || '◆'}</span>
+              <div className="tm-card-copy">
+                <div className="tm-card-title"><b>{api.name}</b><span className={`tm-dot ${api.status}`}></span></div>
+                <p>{api.desc}</p>
+                <code>{api.endpoint}</code>
+              </div>
+              <span className={`api-status ${api.status}`}>{(api.status || 'offline').replace('_',' ')}</span>
+            </div>
+            <div className="tm-card-footer">
+              <button onClick={(e)=>{e.stopPropagation(); copyApi(api);}}>⧉ Copy</button>
+              <button onClick={(e)=>{e.stopPropagation(); setSelectedId(api.id); setTryBody(JSON.stringify(Object.fromEntries((api.params || []).map((param)=>[param, ''])), null, 2));}}>Use now</button>
+            </div>
+          </article>)}
+        </div>
+      </section>
+
+      <aside className="tm-api-detail">
+        {selected ? <>
+          <div className="tm-detail-head"><span className="tm-api-avatar large">{selected.icon || '◆'}</span><div><h2>{selected.name}</h2><p>{selected.category} · {selected.status}</p></div></div>
+          <div className="tm-tabs"><button className="active">Overview</button><button>Parameters</button><button>Try it</button></div>
+          <dl className="tm-meta"><dt>Endpoint</dt><dd><code>{selected.endpoint || ''}</code></dd><dt>Description</dt><dd>{selected.desc}</dd><dt>Parameters</dt><dd>{(selected.params || []).length ? (selected.params || []).join(', ') : 'None listed'}</dd><dt>Env / key</dt><dd>{selected.env || 'Not required or managed externally'}</dd></dl>
+          <label className="tm-try-label">Try it body<textarea value={tryBody} onChange={(e)=>setTryBody(e.target.value)} placeholder='{"path":"D:/..."}'/></label>
+          <div className="tm-detail-actions"><button className="tm-primary" onClick={tryEndpoint}>Try endpoint</button><button className="tm-secondary" onClick={()=>copyApi(selected)}>Copy API</button>{selected.docs && <button className="tm-secondary" onClick={()=>window.open(selected.docs, '_blank', 'noopener')}>Open docs</button>}</div>
+          <small className="api-hint">GET routes ignore the body. External endpoints are copied/opened as context only.</small>
+        </> : <p>Select an API card.</p>}
+      </aside>
     </div>
   </section>;
 }
