@@ -2,12 +2,6 @@ import { useMemo, useRef, useEffect } from 'react';
 import { MessageSquare, Pin, Archive, ArrowRightLeft, Clock } from 'lucide-react';
 import { SourceAvatar, StatusBadge, getSourceMeta } from '../icons/AppIcons';
 
-/*
-  ChatView — the main conversation surface.
-  Renders messages chronologically with source avatars, timestamps,
-  and actions. Groups adjacent messages from the same source.
-*/
-
 function formatTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -96,7 +90,6 @@ function DateDivider({ date }) {
 export function ChatView({ messages, onPatchMessage, onSelectMessage, filterSource }) {
   const bottomRef = useRef(null);
 
-  /* Group messages: by date, then by adjacent source */
   const grouped = useMemo(() => {
     const filtered = filterSource
       ? messages.filter((m) => {
@@ -105,7 +98,6 @@ export function ChatView({ messages, onPatchMessage, onSelectMessage, filterSour
         })
       : messages;
 
-    // Sort by timestamp
     const sorted = [...filtered].sort((a, b) => {
       const ta = new Date(a.created_at || a.timestamp || 0).getTime();
       const tb = new Date(b.created_at || b.timestamp || 0).getTime();
@@ -147,7 +139,6 @@ export function ChatView({ messages, onPatchMessage, onSelectMessage, filterSour
     return groups;
   }, [messages, filterSource]);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [grouped.length]);

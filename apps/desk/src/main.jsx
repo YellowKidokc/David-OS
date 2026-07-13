@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { NUMBERING, topOfMindApi } from './lib/api/topOfMindApi';
@@ -5,13 +6,12 @@ import { ChatView } from './components/chat/ChatView';
 import { Composer } from './components/chat/Composer';
 import { SourceFilter } from './components/chat/SourceFilter';
 import { PromptsPanel } from './components/prompts/PromptsPanel';
+import { RightHub } from './components/rightHub/RightHub';
 import './styles.css';
 
 const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
 const OP_FAMILY_KEY = 'topOfMind.operationFamily';
-const API_SHELF_KEY = 'topOfMind.apiShelf.v1';
 
-// ---- fallback data ----
 const fallbackSources = [
   { id: 'clipboard', name: 'Clipboard', status: 'online', source_code: NUMBERING.sources.clipboard },
   { id: 'ahk', name: 'AutoHotkey', status: 'online', source_code: NUMBERING.sources.ahk },
@@ -27,7 +27,6 @@ const starterFolders = [
   ]}
 ];
 
-// ---- helpers ----
 const initials = (s) => (s?.name || s?.label || s?.id || s?.source_id || '?').split(/\s|-/).map((p) => p[0]).join('').slice(0, 3).toUpperCase();
 const srcName = (s) => s?.name || s?.label || s?.source_id || s?.id || 'source';
 const srcId = (s) => s?.id || s?.source_id || s?.name || s?.label;
@@ -39,73 +38,73 @@ const API_REGISTRY_KEY = 'topOfMind.apiRegistry.v1';
 const apiRegistryCategories = {
   file_system: {
     label: 'File System',
-    icon: '▣',
+    icon: '\u25A3',
     aliases: ['filesystem', 'file', 'fis'],
     apis: [
-      { id: 'fis_intake', name: 'Intake Router', endpoint: 'POST /fis/intake', desc: 'Route files to correct locations', status: 'configured', icon: '⇄', params: ['source_folder'] },
-      { id: 'fis_neardup', name: 'Near-Dup Scanner', endpoint: 'POST /fis/neardup', desc: 'Find duplicate and similar files', status: 'configured', icon: '≋', params: [] },
-      { id: 'fis_crossfolder', name: 'Cross-Folder Scan', endpoint: 'POST /fis/crossfolder', desc: 'Structural fingerprint comparison', status: 'configured', icon: '⌘', params: ['folders'] },
-      { id: 'fis_classify', name: 'Classify File', endpoint: 'POST /fis/classify', desc: 'Domain classification for a single file', status: 'configured', icon: '◇', params: ['file_path'] },
-      { id: 'file_actions', name: 'File Actions', endpoint: 'POST /operator/file-actions', desc: 'Write, append, delete with review gate', status: 'active', icon: '✎', params: ['action', 'path', 'text'] },
-      { id: 'folders', name: 'Folder Profiles', endpoint: 'GET /folders', desc: 'List and manage watched folders', status: 'active', icon: '📁', params: [] },
+      { id: 'fis_intake', name: 'Intake Router', endpoint: 'POST /fis/intake', desc: 'Route files to correct locations', status: 'configured', icon: '\u21C4', params: ['source_folder'] },
+      { id: 'fis_neardup', name: 'Near-Dup Scanner', endpoint: 'POST /fis/neardup', desc: 'Find duplicate and similar files', status: 'configured', icon: '\u224B', params: [] },
+      { id: 'fis_crossfolder', name: 'Cross-Folder Scan', endpoint: 'POST /fis/crossfolder', desc: 'Structural fingerprint comparison', status: 'configured', icon: '\u2318', params: ['folders'] },
+      { id: 'fis_classify', name: 'Classify File', endpoint: 'POST /fis/classify', desc: 'Domain classification for a single file', status: 'configured', icon: '\u25C7', params: ['file_path'] },
+      { id: 'file_actions', name: 'File Actions', endpoint: 'POST /operator/file-actions', desc: 'Write, append, delete with review gate', status: 'active', icon: '\u270E', params: ['action', 'path', 'text'] },
+      { id: 'folders', name: 'Folder Profiles', endpoint: 'GET /folders', desc: 'List and manage watched folders', status: 'active', icon: '\uD83D\uDCC1', params: [] },
     ],
   },
   communication: {
     label: 'Communication',
-    icon: '✉',
+    icon: '\u2709',
     aliases: ['comm', 'communications', 'chat'],
     apis: [
-      { id: 'mattermost_send', name: 'Send Message', endpoint: 'POST /mattermost/send', desc: 'Send to a Mattermost channel', status: 'needs_key', icon: '→', params: ['channel', 'message'] },
-      { id: 'mattermost_broadcast', name: 'Broadcast', endpoint: 'POST /mattermost/broadcast', desc: 'Send to all AI channels', status: 'needs_key', icon: '☊', params: ['message'] },
+      { id: 'mattermost_send', name: 'Send Message', endpoint: 'POST /mattermost/send', desc: 'Send to a Mattermost channel', status: 'needs_key', icon: '\u2192', params: ['channel', 'message'] },
+      { id: 'mattermost_broadcast', name: 'Broadcast', endpoint: 'POST /mattermost/broadcast', desc: 'Send to all AI channels', status: 'needs_key', icon: '\u260A', params: ['message'] },
       { id: 'mattermost_unread', name: 'Unread Count', endpoint: 'GET /mattermost/unread', desc: 'Check unread per channel', status: 'needs_key', icon: '#', params: [] },
-      { id: 'messages', name: 'Hub Messages', endpoint: 'GET /messages', desc: 'Read/write hub message stream', status: 'active', icon: '☰', params: ['limit'] },
-      { id: 'clipboard', name: 'Clipboard', endpoint: 'POST /clipboard/save', desc: 'Save/push clipboard content', status: 'active', icon: '⧉', params: ['text'] },
+      { id: 'messages', name: 'Hub Messages', endpoint: 'GET /messages', desc: 'Read/write hub message stream', status: 'active', icon: '\u2630', params: ['limit'] },
+      { id: 'clipboard', name: 'Clipboard', endpoint: 'POST /clipboard/save', desc: 'Save/push clipboard content', status: 'active', icon: '\u29C9', params: ['text'] },
     ],
   },
   ai_models: {
     label: 'AI Models',
-    icon: '◎',
+    icon: '\u25CE',
     aliases: ['ai', 'models', 'model'],
     apis: [
-      { id: 'openai', name: 'OpenAI', endpoint: 'External', desc: 'GPT, embeddings, agents', status: 'needs_key', icon: '◌', env: 'OPENAI_API_KEY', docs: 'https://platform.openai.com/docs' },
-      { id: 'anthropic', name: 'Anthropic', endpoint: 'External', desc: 'Claude API', status: 'needs_key', icon: '◍', env: 'ANTHROPIC_API_KEY' },
-      { id: 'gemini', name: 'Google Gemini', endpoint: 'External', desc: 'Deep research, NotebookLM', status: 'needs_key', icon: '✦', env: 'GEMINI_API_KEY', docs: 'https://gemini.google.com' },
-      { id: 'deepseek', name: 'DeepSeek', endpoint: 'External', desc: 'Station 17 pipeline', status: 'needs_key', icon: '◆', env: 'DEEPSEEK_API_KEY' },
-      { id: 'ollama', name: 'Ollama', endpoint: 'http://192.168.2.50:11434', desc: 'Local LLM inference', status: 'offline', icon: '●' },
-      { id: 'notebooklm', name: 'NotebookLM', endpoint: 'External', desc: 'Research notebooks and source packs', status: 'needs_key', icon: '▤', docs: 'https://notebooklm.google.com' },
+      { id: 'openai', name: 'OpenAI', endpoint: 'External', desc: 'GPT, embeddings, agents', status: 'needs_key', icon: '\u25CC', env: 'OPENAI_API_KEY', docs: 'https://platform.openai.com/docs' },
+      { id: 'anthropic', name: 'Anthropic', endpoint: 'External', desc: 'Claude API', status: 'needs_key', icon: '\u25CD', env: 'ANTHROPIC_API_KEY' },
+      { id: 'gemini', name: 'Google Gemini', endpoint: 'External', desc: 'Deep research, NotebookLM', status: 'needs_key', icon: '\u2726', env: 'GEMINI_API_KEY', docs: 'https://gemini.google.com' },
+      { id: 'deepseek', name: 'DeepSeek', endpoint: 'External', desc: 'Station 17 pipeline', status: 'needs_key', icon: '\u25C6', env: 'DEEPSEEK_API_KEY' },
+      { id: 'ollama', name: 'Ollama', endpoint: 'http://192.168.2.50:11434', desc: 'Local LLM inference', status: 'offline', icon: '\u25CF' },
+      { id: 'notebooklm', name: 'NotebookLM', endpoint: 'External', desc: 'Research notebooks and source packs', status: 'needs_key', icon: '\u25A4', docs: 'https://notebooklm.google.com' },
     ],
   },
   nlp: {
     label: 'NLP Pipeline',
-    icon: '∑',
+    icon: '\u2211',
     aliases: ['nlp', 'semantic'],
     apis: [
-      { id: 'backside_nlp', name: 'BACKSIDE NLP', endpoint: 'http://192.168.2.50:8700', desc: 'Local model API (SBERT, DeBERTa, BART)', status: 'offline', icon: 'β' },
-      { id: 'intelligence', name: 'Intelligence', endpoint: 'GET /intelligence/files', desc: 'File records and folder summaries', status: 'active', icon: 'ℹ', params: ['q'] },
-      { id: 'semantic', name: 'Semantic Search', endpoint: 'POST /semantic/search', desc: 'Vector similarity search', status: 'configured', icon: '⌕', params: ['query'] },
-      { id: 'fis_classify_nlp', name: 'Classify File', endpoint: 'POST /fis/classify', desc: 'Domain classification via FIS', status: 'configured', icon: '◇', params: ['file_path'] },
+      { id: 'backside_nlp', name: 'BACKSIDE NLP', endpoint: 'http://192.168.2.50:8700', desc: 'Local model API (SBERT, DeBERTa, BART)', status: 'offline', icon: '\u03B2' },
+      { id: 'intelligence', name: 'Intelligence', endpoint: 'GET /intelligence/files', desc: 'File records and folder summaries', status: 'active', icon: '\u2139', params: ['q'] },
+      { id: 'semantic', name: 'Semantic Search', endpoint: 'POST /semantic/search', desc: 'Vector similarity search', status: 'configured', icon: '\u2305', params: ['query'] },
+      { id: 'fis_classify_nlp', name: 'Classify File', endpoint: 'POST /fis/classify', desc: 'Domain classification via FIS', status: 'configured', icon: '\u25C7', params: ['file_path'] },
     ],
   },
   storage: {
     label: 'Storage',
-    icon: '▰',
+    icon: '\u25B0',
     aliases: ['storage', 'store'],
     apis: [
-      { id: 'synology', name: 'Synology NAS', endpoint: 'http://192.168.2.50:5000', desc: 'NAS storage and Docker management', status: 'offline', icon: '▥' },
-      { id: 'r2', name: 'Cloudflare R2', endpoint: 'External', desc: 'Media bucket storage', status: 'needs_key', icon: '☁', env: 'R2 keys', docs: 'https://developers.cloudflare.com/r2/' },
-      { id: 'postgres', name: 'PostgreSQL', endpoint: '192.168.2.50:5432', desc: 'Axiom database, canonical nodes', status: 'offline', icon: '⬢' },
-      { id: 'syncthing', name: 'Syncthing', endpoint: 'http://127.0.0.1:8384', desc: 'File sync between machines', status: 'offline', icon: '↔' },
-      { id: 'cloudflare', name: 'Cloudflare', endpoint: 'External', desc: 'Pages deploys, DNS, and R2 console', status: 'needs_key', icon: '☁', env: 'CLOUDFLARE_API_TOKEN', docs: 'https://dash.cloudflare.com' },
+      { id: 'synology', name: 'Synology NAS', endpoint: 'http://192.168.2.50:5000', desc: 'NAS storage and Docker management', status: 'offline', icon: '\u25A5' },
+      { id: 'r2', name: 'Cloudflare R2', endpoint: 'External', desc: 'Media bucket storage', status: 'needs_key', icon: '\u2601', env: 'R2 keys', docs: 'https://developers.cloudflare.com/r2/' },
+      { id: 'postgres', name: 'PostgreSQL', endpoint: '192.168.2.50:5432', desc: 'Axiom database, canonical nodes', status: 'offline', icon: '\u2B22' },
+      { id: 'syncthing', name: 'Syncthing', endpoint: 'http://127.0.0.1:8384', desc: 'File sync between machines', status: 'offline', icon: '\u2194' },
+      { id: 'cloudflare', name: 'Cloudflare', endpoint: 'External', desc: 'Pages deploys, DNS, and R2 console', status: 'needs_key', icon: '\u2601', env: 'CLOUDFLARE_API_TOKEN', docs: 'https://dash.cloudflare.com' },
     ],
   },
   desktop: {
     label: 'Desktop Control',
-    icon: '⌨',
+    icon: '\u2328',
     aliases: ['desktop', 'control', 'operator'],
     apis: [
-      { id: 'ahk_bridge', name: 'AHK Bridge', endpoint: 'POST /bridge/jobs', desc: 'Paste, send, overlay control', status: 'active', icon: '⌨', env: 'AHK_BRIDGE_URL', params: ['action', 'payload'] },
+      { id: 'ahk_bridge', name: 'AHK Bridge', endpoint: 'POST /bridge/jobs', desc: 'Paste, send, overlay control', status: 'active', icon: '\u2328', env: 'AHK_BRIDGE_URL', params: ['action', 'payload'] },
       { id: 'commands', name: 'Commands', endpoint: 'POST /operator/commands', desc: 'Execute shell commands with review', status: 'active', icon: '>', params: ['command'] },
-      { id: 'agents', name: 'Agent Send', endpoint: 'POST /agents/send', desc: 'Route messages to AI agents', status: 'active', icon: '◎', params: ['target', 'message'] },
+      { id: 'agents', name: 'Agent Send', endpoint: 'POST /agents/send', desc: 'Route messages to AI agents', status: 'active', icon: '\u25CE', params: ['target', 'message'] },
     ],
   },
 };
@@ -146,7 +145,7 @@ function ApiShelfPanel({ setNotice }) {
     const id = `custom-${Date.now()}`;
     let host = 'Imported API';
     try { host = new URL(url).hostname || host; } catch { host = url.replace(/^https?:\/\//, '').split('/')[0] || host; }
-    const api = { id, name: host, categoryId: 'custom', category: 'Imported', status: 'needs_key', endpoint: url, desc: 'Imported docs/spec URL — extraction pending', icon: '+', docs: url, params: [] };
+    const api = { id, name: host, categoryId: 'custom', category: 'Imported', status: 'needs_key', endpoint: url, desc: 'Imported docs/spec URL \u2014 extraction pending', icon: '+', docs: url, params: [] };
     saveCustom([...customApis, api]);
     setSelectedCategory('all'); setSelectedId(id); setUrlDraft(''); setUrlFormOpen(false); setNotice('Added API URL card. Auto-extraction is next.');
   };
@@ -170,7 +169,7 @@ function ApiShelfPanel({ setNotice }) {
         <p>Browse hub routes, external connectors, local models, storage, and desktop controls.</p>
       </div>
       <div className="tm-head-actions">
-        <button className="tm-primary" onClick={()=>setUrlFormOpen(!urlFormOpen)}>＋ Add API from URL</button>
+        <button className="tm-primary" onClick={()=>setUrlFormOpen(!urlFormOpen)}>\uFF0B Add API from URL</button>
         <button className="tm-secondary" onClick={copyVisibleApis}>Copy visible APIs</button>
         <button className="tm-secondary" onClick={()=>copyApi(selected)}>Copy selected</button>
       </div>
@@ -181,23 +180,23 @@ function ApiShelfPanel({ setNotice }) {
     <div className="tm-api-shell">
       <aside className="tm-api-sidebar">
         <div className="tm-side-section">Store</div>
-        <button className={selectedCategory==='all'?'selected':''} onClick={()=>setSelectedCategory('all')}><span className="tm-side-icon">⌘</span><span>All APIs</span><b>{allItems.length}</b></button>
+        <button className={selectedCategory==='all'?'selected':''} onClick={()=>setSelectedCategory('all')}><span className="tm-side-icon">\u2318</span><span>All APIs</span><b>{allItems.length}</b></button>
         <div className="tm-side-section">Categories</div>
         {Object.entries(apiRegistryCategories).map(([id, cat])=><button key={id} className={selectedCategory===id?'selected':''} onClick={()=>setSelectedCategory(id)}><span className="tm-side-icon">{cat.icon}</span><span>{cat.label}</span><b>{cat.apis.length}</b></button>)}
-        {customApis.length > 0 && <><div className="tm-side-section">Installed</div><button className={selectedCategory==='custom'?'selected':''} onClick={()=>setSelectedCategory('custom')}><span className="tm-side-icon">＋</span><span>Imported</span><b>{customApis.length}</b></button></>}
-        <div className="tm-side-card"><strong>{visibleItems.length}</strong><span>visible APIs</span><small>Green = active/configured · amber = needs key · red = offline</small></div>
+        {customApis.length > 0 && <><div className="tm-side-section">Installed</div><button className={selectedCategory==='custom'?'selected':''} onClick={()=>setSelectedCategory('custom')}><span className="tm-side-icon">\uFF0B</span><span>Imported</span><b>{customApis.length}</b></button></>}
+        <div className="tm-side-card"><strong>{visibleItems.length}</strong><span>visible APIs</span><small>Green = active/configured \u00B7 amber = needs key \u00B7 red = offline</small></div>
       </aside>
 
       <section className="tm-api-main">
         <div className="tm-toolbar">
-          <div className="tm-search"><span>⌕</span><input value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="Search APIs, endpoints, parameters…"/></div>
-          <button className="tm-icon-button" title="Grid view">▦</button>
-          <button className="tm-sort">↕ Status</button>
+          <div className="tm-search"><span>\u2305</span><input value={filter} onChange={(e)=>setFilter(e.target.value)} placeholder="Search APIs, endpoints, parameters\u2026"/></div>
+          <button className="tm-icon-button" title="Grid view">\u25A6</button>
+          <button className="tm-sort">\u2195 Status</button>
         </div>
         <div className="tm-card-grid">
           {visibleItems.map((api)=><article key={api.id} className={`tm-api-card ${selected?.id===api.id?'selected':''}`} onClick={()=>setSelectedId(api.id)}>
             <div className="tm-card-body">
-              <span className="tm-api-avatar">{api.icon || '◆'}</span>
+              <span className="tm-api-avatar">{api.icon || '\u25C6'}</span>
               <div className="tm-card-copy">
                 <div className="tm-card-title"><b>{api.name}</b><span className={`tm-dot ${api.status}`}></span></div>
                 <p>{api.desc}</p>
@@ -206,8 +205,8 @@ function ApiShelfPanel({ setNotice }) {
               <span className={`api-status ${api.status}`}>{(api.status || 'offline').replace('_',' ')}</span>
             </div>
             <div className="tm-card-footer">
-              <button onClick={(e)=>{e.stopPropagation(); copyApi(api);}}>⧉ Copy</button>
-              <button onClick={(e)=>{e.stopPropagation(); setSelectedId(api.id); setTryBody(JSON.stringify(Object.fromEntries((api.params || []).map((param)=>[param, ''])), null, 2));}}>Use now</button>
+              <button onClick={(e)=>{e.stopPropagation(); copyApi(api); }}>\u29C9 Copy</button>
+              <button onClick={(e)=>{e.stopPropagation(); setSelectedId(api.id); setTryBody(JSON.stringify(Object.fromEntries((api.params || []).map((param)=>[param, ''])), null, 2)); }}>Use now</button>
             </div>
           </article>)}
         </div>
@@ -215,7 +214,7 @@ function ApiShelfPanel({ setNotice }) {
 
       <aside className="tm-api-detail">
         {selected ? <>
-          <div className="tm-detail-head"><span className="tm-api-avatar large">{selected.icon || '◆'}</span><div><h2>{selected.name}</h2><p>{selected.category} · {selected.status}</p></div></div>
+          <div className="tm-detail-head"><span className="tm-api-avatar large">{selected.icon || '\u25C6'}</span><div><h2>{selected.name}</h2><p>{selected.category} \u00B7 {selected.status}</p></div></div>
           <div className="tm-tabs"><button className="active">Overview</button><button>Parameters</button><button>Try it</button></div>
           <dl className="tm-meta"><dt>Endpoint</dt><dd><code>{selected.endpoint || ''}</code></dd><dt>Description</dt><dd>{selected.desc}</dd><dt>Parameters</dt><dd>{(selected.params || []).length ? (selected.params || []).join(', ') : 'None listed'}</dd><dt>Env / key</dt><dd>{selected.env || 'Not required or managed externally'}</dd></dl>
           <label className="tm-try-label">Try it body<textarea value={tryBody} onChange={(e)=>setTryBody(e.target.value)} placeholder='{"path":"D:/..."}'/></label>
@@ -227,38 +226,38 @@ function ApiShelfPanel({ setNotice }) {
   </section>;
 }
 
-// ---- Settings (unchanged) ----
+// ---- Settings ----
 function ApiSettings({ online, setOnline, notice }) {
   const [url, setUrl] = useState(topOfMindApi.baseUrl);
   async function test() { topOfMindApi.setBaseUrl(url); try { await topOfMindApi.test(); setOnline(true); } catch { setOnline(false); } }
   return <section className="panel settings"><h3>API Settings</h3><input value={url} onChange={(e)=>setUrl(e.target.value)} placeholder="http://127.0.0.1:10000"/><button onClick={()=>{topOfMindApi.setBaseUrl(url); test();}}>Save + Test</button><span className={`status ${online?'ok':'bad'}`}>{online ? 'online' : 'offline'}</span>{notice && <p>{notice}</p>}</section>;
 }
 
-// ---- Sidebar (unchanged) ----
+// ---- Sidebar ----
 function Sidebar({ folders, selectedFolder, setSelectedFolder, createFolder, active, setActive }) {
   const sections = ['chats','apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
-  const renderFolder = (f, depth = 0) => <div key={f.id || f.folder_id || f.folder_code}><button className="row" style={{'--depth': depth}} onClick={()=>setSelectedFolder(f)}>{depth ? '└' : '▾'} 📁 {f.name || f.title} <small>{f.folder_code}</small></button>{(f.children || []).map((c)=>renderFolder(c, depth + 1))}<button className="chat" style={{'--depth': depth + 1}}>💬 Current routing chat</button></div>;
-  return <aside className="sidebar"><button className="new">＋ New Chat</button><input className="search" placeholder="Search Chats"/><h3>Folders</h3>{folders.map((f)=>renderFolder(f))}<button className="row" onClick={createFolder}>＋ Create folder via API</button>{sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>◇ {s}</button>)}</aside>;
+  const renderFolder = (f, depth = 0) => <div key={f.id || f.folder_id || f.folder_code}><button className="row" style={{'--depth': depth}} onClick={()=>setSelectedFolder(f)}>{depth ? '\u2514' : '\u25BE'} \uD83D\uDCC1 {f.name || f.title} <small>{f.folder_code}</small></button>{(f.children || []).map((c)=>renderFolder(c, depth + 1))}<button className="chat" style={{'--depth': depth + 1}}>\uD83D\uDCAC Current routing chat</button></div>;
+  return <aside className="sidebar"><button className="new">\uFF0B New Chat</button><input className="search" placeholder="Search Chats"/><h3>Folders</h3>{folders.map((f)=>renderFolder(f))}<button className="row" onClick={createFolder}>\uFF0B Create folder via API</button>{sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>\u25C7 {s}</button>)}</aside>;
 }
 
-// ---- Funnel (source control) ----
+// ---- Funnel ----
 function Funnel({ sources, setSources, selectedMessage, patchMessage, collapsed, setCollapsed, activeAgentId, setActiveAgentId }) {
   const toggle = (id, key) => setSources((ss)=>ss.map((s)=> (s.id||s.name)===id ? {...s, [key]: !s[key], status: key==='paused' ? 'paused' : s.status} : s));
   const assign = (field, value) => selectedMessage && patchMessage(selectedMessage.id || selectedMessage.message_id, { [field]: value });
-  return <aside className={`funnel ${collapsed?'collapsed':''}`}><button onClick={()=>setCollapsed(!collapsed)}>{collapsed?'▶':'◀'}</button>{!collapsed && <><h3>Funnel</h3>{sources.map((s)=>{ const id = srcId(s); const isActive = id === activeAgentId; return <div className={`source ${isActive?'active-source':''}`} key={id} onClick={()=>setActiveAgentId(id)} role="button" tabIndex="0" onKeyDown={(e)=>{if(e.key==='Enter'||e.key===' ') setActiveAgentId(id);}}><span className="avatar">{initials(s)}</span><b>{srcName(s)}</b><em>{isActive ? 'active' : (s.status||'online')}</em><button onClick={(e)=>{e.stopPropagation();toggle(id,'paused');}}>pause</button><button onClick={(e)=>{e.stopPropagation();toggle(id,'muted');}}>mute</button><label onClick={(e)=>e.stopPropagation()}><input type="checkbox" defaultChecked/> include</label><small>priority {s.priority || s.priority_code || 'normal'} · {s.configured === false ? 'not configured' : 'configured'}</small></div>})}<h3>Assign selected</h3><button onClick={()=>assign('wall_code', NUMBERING.walls.main)}>Main wall</button><button onClick={()=>assign('wall_code', NUMBERING.walls.code)}>Code wall</button><button onClick={()=>assign('folder_code', NUMBERING.folders.active)}>Active folder</button><div className="grid"><button onClick={()=>topOfMindApi.combine({})}>combine</button><button>split draft</button><button>broadcast draft</button><button onClick={()=>topOfMindApi.endAll()}>end all</button></div></>}</aside>;
+  return <aside className={`funnel ${collapsed?'collapsed':''}`}><button onClick={()=>setCollapsed(!collapsed)}>{collapsed?'\u25B6':'\u25C0'}</button>{!collapsed && <><h3>Funnel</h3>{sources.map((s)=>{ const id = srcId(s); const isActive = id === activeAgentId; return <div className={`source ${isActive?'active-source':''}`} key={id} onClick={()=>setActiveAgentId(id)} role="button" tabIndex="0" onKeyDown={(e)=>{if(e.key==='Enter'||e.key===' ') setActiveAgentId(id);}}><span className="avatar">{initials(s)}</span><b>{srcName(s)}</b><em>{isActive ? 'active' : (s.status||'online')}</em><button onClick={(e)=>{e.stopPropagation();toggle(id,'paused');}}>pause</button><button onClick={(e)=>{e.stopPropagation();toggle(id,'muted');}}>mute</button><label onClick={(e)=>e.stopPropagation()}><input type="checkbox" defaultChecked/> include</label><small>priority {s.priority || s.priority_code || 'normal'} \u00B7 {s.configured === false ? 'not configured' : 'configured'}</small></div>})}<h3>Assign selected</h3><button onClick={()=>assign('wall_code', NUMBERING.walls.main)}>Main wall</button><button onClick={()=>assign('wall_code', NUMBERING.walls.code)}>Code wall</button><button onClick={()=>assign('folder_code', NUMBERING.folders.active)}>Active folder</button><div className="grid"><button onClick={()=>topOfMindApi.combine({})}>combine</button><button>split draft</button><button>broadcast draft</button><button onClick={()=>topOfMindApi.endAll()}>end all</button></div></>}</aside>;
 }
 
-// ---- Operator Surface (unchanged from original) ----
+// ---- Operator Surface ----
 const operationFamilies = [
-  { id: 'ahk', label: 'AHK', icon: '⌨', group: 'AutoHotkey' },
-  { id: 'clipboard', label: 'Clipboard', icon: '⧉', group: 'Clipboard' },
-  { id: 'files', label: 'Files', icon: '▣', group: 'File Operations' },
-  { id: 'knowledge', label: 'Knowledge', icon: '◇', group: 'Knowledge Bank' },
-  { id: 'vector', label: 'Vector', icon: '∑', group: 'Vectorization' },
+  { id: 'ahk', label: 'AHK', icon: '\u2328', group: 'AutoHotkey' },
+  { id: 'clipboard', label: 'Clipboard', icon: '\u29C9', group: 'Clipboard' },
+  { id: 'files', label: 'Files', icon: '\u25A3', group: 'File Operations' },
+  { id: 'knowledge', label: 'Knowledge', icon: '\u25C7', group: 'Knowledge Bank' },
+  { id: 'vector', label: 'Vector', icon: '\u2211', group: 'Vectorization' },
   { id: 'commands', label: 'Commands', icon: '>', group: 'Command Line' },
-  { id: 'agents', label: 'Agents', icon: '◎', group: 'Agents' },
-  { id: 'memory', label: 'Memory', icon: '◈', group: 'Memory' },
-  { id: 'hub', label: 'Hub', icon: '◆', group: 'API Calls' },
+  { id: 'agents', label: 'Agents', icon: '\u25CE', group: 'Agents' },
+  { id: 'memory', label: 'Memory', icon: '\u25C8', group: 'Memory' },
+  { id: 'hub', label: 'Hub', icon: '\u25C6', group: 'API Calls' },
 ];
 
 function OperatorSurface({ selectedSource, input, setNotice }) {
@@ -320,9 +319,9 @@ function OperatorSurface({ selectedSource, input, setNotice }) {
   };
   return <aside className={`operator-surface ${folded?'folded':''}`} aria-label="Operator command surface">
     <nav className="shortcut-rail" aria-label="Operation shortcuts">
-      <button className="fold" onClick={()=>setFolded(!folded)} aria-label={folded?'Expand operations':'Fold operations'} title={folded?'Expand operations':'Fold operations'}>{folded?'◀':'▶'}</button>
+      <button className="fold" onClick={()=>setFolded(!folded)} aria-label={folded?'Expand operations':'Fold operations'} title={folded?'Expand operations':'Fold operations'}>{folded?'\u25C0':'\u25B6'}</button>
       <div className="rail-ahk" aria-label="Persistent AutoHotkey controls">
-        <span className={`dot ${ahkOnline?'ok':'bad'}`} title={`AHK ${ahkOnline?'online':'offline'} · ${profile}`}></span>
+        <span className={`dot ${ahkOnline?'ok':'bad'}`} title={`AHK ${ahkOnline?'online':'offline'} \u00B7 ${profile}`}></span>
         <button onClick={()=>safeCall('AHK Frame', ()=>bridgeJob('toggle_overlay', { profile }))} aria-label="Toggle AHK frame overlay" title="Frame / overlay">F</button>
         <button onClick={()=>safeCall('AHK Paste', ()=>bridgeJob('paste_to_active', { text: input }))} aria-label="AHK paste to active" title="Paste">P</button>
         <button onClick={()=>safeCall('AHK Send', ()=>bridgeJob('send_to_active', { text: input }))} aria-label="AHK send to active" title="Send">S</button>
@@ -335,7 +334,7 @@ function OperatorSurface({ selectedSource, input, setNotice }) {
     {!folded && <section className="ops-panel">
       <div className="ahk-layer" aria-label="Persistent AutoHotkey layer">
         <div><b>AHK</b><span className={`dot ${ahkOnline?'ok':'bad'}`}></span></div>
-        <small>{ahkOnline?'online':'offline'} · {profile}</small>
+        <small>{ahkOnline?'online':'offline'} \u00B7 {profile}</small>
         <div className="mini-grid">
           <button onClick={()=>safeCall('AHK Frame', ()=>bridgeJob('toggle_overlay', { profile }))}>Frame</button>
           <button onClick={()=>safeCall('AHK Paste', ()=>bridgeJob('paste_to_active', { text: input }))}>Paste</button>
@@ -346,16 +345,16 @@ function OperatorSurface({ selectedSource, input, setNotice }) {
         </div>
       </div>
       <div className="ops-head"><b>{selectedFamily.group}</b><small>target: {agent.name}</small></div>
-      {groupedCapabilities.length ? <div className="cap-list">{groupedCapabilities.map((cap)=><button key={cap.id} disabled={cap.enabled===false} className={cap.requires_confirm || cap.risk_level === 'danger' ? 'danger' : ''} onClick={()=>safeCall(cap.label, ()=>topOfMindApi.createBridgeJob({ worker: 'ahk-main', action: cap.id, target: agent, payload: { dry_run: cap.supports_dry_run !== false }, source: 'capability' }), cap.requires_confirm ? { confirm: `${cap.label} requires confirmation. Continue?` } : {})}>{cap.label}<small>{cap.capability} · {cap.risk_level || 'safe'}</small></button>)}</div> : <div className="ops-grid">{defaultActions[family] || defaultActions.hub}<small className="placeholder">No /capabilities data for this group yet; showing safe hub placeholders.</small></div>}
+      {groupedCapabilities.length ? <div className="cap-list">{groupedCapabilities.map((cap)=><button key={cap.id} disabled={cap.enabled===false} className={cap.requires_confirm || cap.risk_level === 'danger' ? 'danger' : ''} onClick={()=>safeCall(cap.label, ()=>topOfMindApi.createBridgeJob({ worker: 'ahk-main', action: cap.id, target: agent, payload: { dry_run: cap.supports_dry_run !== false }, source: 'capability' }), cap.requires_confirm ? { confirm: `${cap.label} requires confirmation. Continue?` } : {})}>{cap.label}<small>{cap.capability} \u00B7 {cap.risk_level || 'safe'}</small></button>)}</div> : <div className="ops-grid">{defaultActions[family] || defaultActions.hub}<small className="placeholder">No /capabilities data for this group yet; showing safe hub placeholders.</small></div>}
     </section>}
   </aside>;
 }
 
-// ---- Search panels (unchanged) ----
+// ---- Search panels ----
 function SearchPanel({ title, modeToggle, onSearch }) {
   const [q, setQ] = useState(''); const [mode, setMode] = useState('text'); const [results, setResults] = useState([]);
   async function run(){ try { setResults(arr(await onSearch(q, mode), 'items')); } catch { setResults([{ name: 'API offline', content: 'Search could not run.' }]); } }
-  return <section className="panel"><h3>{title}</h3><div className="inline"><input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search…"/>{modeToggle && <label><input type="checkbox" onChange={(e)=>setMode(e.target.checked?'vector':'text')}/> vector</label>}<button onClick={run}>Search</button></div>{results.slice(0,8).map((r,i)=><p key={i}>▣ {r.name || r.path || r.title || r.content || JSON.stringify(r)}</p>)}</section>;
+  return <section className="panel"><h3>{title}</h3><div className="inline"><input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Search\u2026"/>{modeToggle && <label><input type="checkbox" onChange={(e)=>setMode(e.target.checked?'vector':'text')}/> vector</label>}<button onClick={run}>Search</button></div>{results.slice(0,8).map((r,i)=><p key={i}>\u25A3 {r.name || r.path || r.title || r.content || JSON.stringify(r)}</p>)}</section>;
 }
 
 // ============================================================
@@ -435,6 +434,26 @@ function App() {
     }
   }
 
+  // Send message from a specific pane (for multi-chat)
+  async function sendFromPane({ body, source_id, source_label }) {
+    if (!body?.trim()) return;
+    const payload = {
+      source_id: source_id || srcId(selectedSource),
+      source_label: source_label || srcName(selectedSource),
+      body: body,
+      role: 'user',
+      wall: 'main',
+      folder: selectedFolder.name || 'Main'
+    };
+    try {
+      const saved = await topOfMindApi.createMessage(payload);
+      setMessages((m)=>[...m, saved]);
+    } catch {
+      setMessages((m)=>[...m, {...payload, id: `local-${Date.now()}`, created_at: new Date().toISOString()}]);
+      setNotice('Draft shown locally; API post failed.');
+    }
+  }
+
   // Patch a message
   async function patchMessage(id, body) {
     setMessages(ms=>ms.map(m=>(m.id===id||m.message_id===id)?{...m,...body}:m));
@@ -470,7 +489,7 @@ function App() {
 
   // Attach (placeholder)
   const handleAttach = useCallback(() => {
-    setNotice('Attachments coming soon — needs upload endpoint.');
+    setNotice('Attachments coming soon \u2014 needs upload endpoint.');
   }, []);
 
   // Derive active source name for composer placeholder
@@ -515,7 +534,7 @@ function App() {
         <header>
           <h1>Top of Mind Desk</h1>
           <span className={`status ${online?'ok':'bad'}`}>
-            {online?'● live':'○ offline'} · {topOfMindApi.baseUrl}
+            {online?'\u25CF live':'\u25CB offline'} \u00B7 {topOfMindApi.baseUrl}
           </span>
         </header>
 
@@ -570,7 +589,7 @@ function App() {
             <PromptsPanel onCopyToComposer={copyPromptToComposer} />
           )}
 
-          {/* Other views (unchanged) */}
+          {/* Other views */}
           {active === 'apis' && <ApiShelfPanel setNotice={setNotice} />}
           {active === 'memory' && <SearchPanel title="Memory search" modeToggle onSearch={(q,m)=>topOfMindApi.searchMemory(q,m==='vector'?'vector':undefined)} />}
           {active === 'files' && <SearchPanel title="File cache search" onSearch={(q)=>topOfMindApi.searchFileCache(q)} />}
@@ -585,6 +604,16 @@ function App() {
           )}
         </section>
       </main>
+
+      {/* Right Hub \u2014 AI Communication Panel */}
+      <RightHub
+        sources={sources}
+        messages={messages}
+        onSendMessage={sendFromPane}
+        onPatchMessage={patchMessage}
+        activeAgentId={activeAgentId}
+        onSetActiveAgent={setActiveAgentId}
+      />
 
       {/* Operator surface */}
       <OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice} />

@@ -10,12 +10,6 @@ import {
   Zap,
 } from 'lucide-react';
 
-/*
-  Composer — the message input bar.
-  Features: textarea, send, mic toggle, attach (placeholder),
-  slash-command autocomplete, prompt-chip bar.
-*/
-
 const SLASH_COMMANDS = [
   { cmd: '/PROBE', desc: 'Run a structured probe', icon: Zap },
   { cmd: '/EAST', desc: 'Expand and simplify text', icon: Sparkles },
@@ -59,28 +53,21 @@ export function Composer({
 
   const handleKeyDown = useCallback(
     (e) => {
-      // Ctrl/Cmd + Enter to send
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         if (input.trim() && !busy) onSend();
         return;
       }
-
-      // Escape to close menus
       if (e.key === 'Escape') {
         setShowSlash(false);
         setShowPrompts(false);
         return;
       }
-
-      // Slash command trigger
       if (e.key === '/' && !showSlash && !input.trim()) {
         setShowSlash(true);
         setSlashQuery('');
         return;
       }
-
-      // Backspace to dismiss slash menu
       if (e.key === 'Backspace' && showSlash) {
         if (slashQuery.length <= 1) {
           setShowSlash(false);
@@ -94,8 +81,6 @@ export function Composer({
   const handleInput = (e) => {
     const val = e.target.value;
     setInput(val);
-
-    // Detect slash commands
     if (val.startsWith('/')) {
       setShowSlash(true);
       setSlashQuery(val.slice(1));
@@ -122,7 +107,6 @@ export function Composer({
     onMicToggle?.(next);
   };
 
-  // Speech recognition
   useEffect(() => {
     if (!micOn) return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -152,7 +136,6 @@ export function Composer({
 
   return (
     <div className="composer-panel">
-      {/* Prompt chips bar */}
       <div className="composer-prompts">
         <button
           className="prompts-toggle"
@@ -174,7 +157,6 @@ export function Composer({
           ))}
       </div>
 
-      {/* Slash command autocomplete */}
       {showSlash && filteredSlash.length > 0 && (
         <div className="slash-menu">
           {filteredSlash.map((c) => (
@@ -187,7 +169,6 @@ export function Composer({
         </div>
       )}
 
-      {/* Main input row */}
       <div className="composer-main">
         <button
           className={`composer-mic ${micOn ? 'mic-on' : ''}`}
