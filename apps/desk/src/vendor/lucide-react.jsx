@@ -13,6 +13,16 @@ const paths = {
   Keyboard: ['rect x="3" y="6" width="18" height="12" rx="2"', 'path d="M7 10h.01M11 10h.01M15 10h.01M19 10h.01M8 14h8"'],
   MessageSquare: ['path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"'],
   Mic: ['rect x="9" y="2" width="6" height="12" rx="3"', 'path d="M5 10a7 7 0 0 0 14 0M12 17v5"'],
+  MicOff: ['path d="M2 2l20 20"', 'path d="M9 9v1a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.6-1.5"', 'path d="M5 10a7 7 0 0 0 12 5M19 10a7 7 0 0 1-.7 3M12 17v5"'],
+  Paperclip: ['path d="M21.4 11.6l-8.5 8.5a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"'],
+  Send: ['path d="M22 2L11 13"', 'path d="M22 2l-7 20-4-9-9-4z"'],
+  Command: ['path d="M18 8a2 2 0 1 0-2-2v12a2 2 0 1 0 2-2H6a2 2 0 1 0 2 2V6a2 2 0 1 0-2 2z"'],
+  CornerDownLeft: ['path d="M9 10l-5 5 5 5"', 'path d="M20 4v7a4 4 0 0 1-4 4H4"'],
+  Zap: ['path d="M13 2L3 14h8l-1 8 10-12h-8z"'],
+  Pin: ['path d="M12 17v5"', 'path d="M5 17h14l-3-4V5l2-2H6l2 2v8z"'],
+  Archive: ['rect x="3" y="4" width="18" height="4" rx="1"', 'path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 12h4"'],
+  ArrowRightLeft: ['path d="M16 3l4 4-4 4"', 'path d="M20 7H4"', 'path d="M8 21l-4-4 4-4"', 'path d="M4 17h16"'],
+  Clock: ['circle cx="12" cy="12" r="9"', 'path d="M12 7v5l3 2"'],
   PauseCircle: ['circle cx="12" cy="12" r="9"', 'path d="M10 9v6M14 9v6"'],
   Plug: ['path d="M9 7V2M15 7V2M7 7h10v4a5 5 0 0 1-10 0zM12 16v6"'],
   Plus: ['path d="M12 5v14M5 12h14"'],
@@ -26,7 +36,25 @@ const paths = {
   CircleDot: ['circle cx="12" cy="12" r="9"', 'circle cx="12" cy="12" r="2"'],
   ChevronDown: ['path d="M6 9l6 6 6-6"'],
   ChevronRight: ['path d="M9 6l6 6-6 6"'],
+  Filter: ['path d="M3 5h18M6 12h12M10 19h4"'],
+  X: ['path d="M18 6L6 18M6 6l12 12"'],
+  Copy: ['rect x="9" y="9" width="11" height="11" rx="2"', 'path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"'],
+  Check: ['path d="M20 6L9 17l-5-5"'],
+  Target: ['circle cx="12" cy="12" r="9"', 'circle cx="12" cy="12" r="3"'],
+  Code: ['path d="M16 18l6-6-6-6M8 6l-6 6 6 6"'],
+  Lightbulb: ['path d="M9 18h6M10 22h4M8 14a6 6 0 1 1 8 0c-1 1-1 2-1 4H9c0-2 0-3-1-4z"'],
+  Flame: ['path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-5-9-.5 2-2 3-4 4-2 1-5 3-5 7a7 7 0 0 0 7 7z"'],
 };
 
 function createIcon(name) { return function Icon({ size = 24, strokeWidth = 2, className = '', ...props }) { return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true" {...props}>{paths[name].map((d, i) => d.startsWith('path') || d.startsWith('rect') || d.startsWith('circle') ? <g key={i} dangerouslySetInnerHTML={{ __html: `<${d}/>` }} /> : null)}</svg>; }; }
+export const MicOff = createIcon('MicOff'); export const Paperclip = createIcon('Paperclip'); export const Send = createIcon('Send'); export const Command = createIcon('Command'); export const CornerDownLeft = createIcon('CornerDownLeft'); export const Zap = createIcon('Zap'); export const Pin = createIcon('Pin'); export const Archive = createIcon('Archive'); export const ArrowRightLeft = createIcon('ArrowRightLeft'); export const Clock = createIcon('Clock');
 export const Bot = createIcon('Bot'); export const BrainCircuit = createIcon('BrainCircuit'); export const CheckCircle2 = createIcon('CheckCircle2'); export const Clipboard = createIcon('Clipboard'); export const FileAudio = createIcon('FileAudio'); export const FileImage = createIcon('FileImage'); export const FileText = createIcon('FileText'); export const FileType = createIcon('FileType'); export const FileVideo = createIcon('FileVideo'); export const Folder = createIcon('Folder'); export const Image = createIcon('Image'); export const Keyboard = createIcon('Keyboard'); export const MessageSquare = createIcon('MessageSquare'); export const Mic = createIcon('Mic'); export const PauseCircle = createIcon('PauseCircle'); export const Plug = createIcon('Plug'); export const Plus = createIcon('Plus'); export const Search = createIcon('Search'); export const Settings = createIcon('Settings'); export const Sparkles = createIcon('Sparkles'); export const Wrench = createIcon('Wrench'); export const XCircle = createIcon('XCircle'); export const AlertTriangle = createIcon('AlertTriangle'); export const VolumeX = createIcon('VolumeX'); export const CircleDot = createIcon('CircleDot'); export const ChevronDown = createIcon('ChevronDown'); export const ChevronRight = createIcon('ChevronRight');
+
+export const Filter = createIcon('Filter');
+export const X = createIcon('X');
+export const Copy = createIcon('Copy');
+export const Check = createIcon('Check');
+export const Target = createIcon('Target');
+export const Code = createIcon('Code');
+export const Lightbulb = createIcon('Lightbulb');
+export const Flame = createIcon('Flame');

@@ -23,6 +23,11 @@ const SLASH_COMMANDS = [
   { cmd: '/SUMMARIZE', desc: 'Summarize selected messages', icon: Sparkles },
   { cmd: '/DRAFT', desc: 'Draft a response', icon: Sparkles },
   { cmd: '/CLEAR', desc: 'Clear the conversation view', icon: Command },
+  { cmd: '/api filesystem intake <source_folder>', desc: 'POST /fis/intake', icon: Command },
+  { cmd: '/api filesystem neardup', desc: 'POST /fis/neardup', icon: Command },
+  { cmd: '/api comm send codex "message here"', desc: 'POST /mattermost/send', icon: Command },
+  { cmd: '/api comm broadcast "message here"', desc: 'POST /mattermost/broadcast', icon: Command },
+  { cmd: '/api nlp classify <file_path>', desc: 'POST /fis/classify', icon: Command },
 ];
 
 const QUICK_PROMPTS = [
@@ -47,8 +52,9 @@ export function Composer({
   const [showPrompts, setShowPrompts] = useState(false);
   const textareaRef = useRef(null);
 
+  const normalizedSlashQuery = slashQuery.toLowerCase().replace(/^\//, '');
   const filteredSlash = SLASH_COMMANDS.filter((c) =>
-    c.cmd.toLowerCase().includes(slashQuery.toLowerCase())
+    c.cmd.toLowerCase().replace(/^\//, '').includes(normalizedSlashQuery)
   );
 
   const handleKeyDown = useCallback(

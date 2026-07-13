@@ -34,6 +34,7 @@ const qs = (params) => new URLSearchParams(params).toString();
 export const topOfMindApi = {
   get baseUrl() { return getApiBaseUrl(); },
   setBaseUrl: setApiBaseUrl,
+  requestRaw: request,
   test: () => request('/top-of-mind/sources'),
   getCapabilities: () => request('/capabilities'),
   getSources: () => request('/top-of-mind/sources'),
@@ -63,4 +64,9 @@ export const topOfMindApi = {
   getFileByPath: (path) => request(`/files/cache/by-path?${qs({ path })}`),
   fileActions: (payload) => request('/operator/file-actions', { method: 'POST', body: JSON.stringify(payload) }),
   command: (payload) => request('/operator/commands', { method: 'POST', body: JSON.stringify(payload) }),
+  fisIntake: (payload) => request('/fis/intake', { method: 'POST', body: JSON.stringify(payload) }),
+  fisNearDup: (payload = {}) => request('/fis/neardup', { method: 'POST', body: JSON.stringify(payload) }),
+  fisClassify: (payload) => request('/fis/classify', { method: 'POST', body: JSON.stringify(payload) }),
+  mattermostSend: (payload) => request('/mattermost/send', { method: 'POST', body: JSON.stringify(payload) }),
+  mattermostBroadcast: (payload) => request('/mattermost/broadcast', { method: 'POST', body: JSON.stringify(payload) }),
 };
