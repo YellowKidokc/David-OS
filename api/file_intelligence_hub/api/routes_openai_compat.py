@@ -1,4 +1,9 @@
-"""OpenAI-compatible local router endpoints for Mattermost Agents."""
+"""OpenAI-compatible local router endpoints for Mattermost Agents.
+
+Refactored July 14, 2026: Replaced hardcoded DeepSeek forwarding with
+pluggable provider router (services/provider_router.py). Any OpenAI-compatible
+endpoint (Ollama, LM Studio, OpenAI, DeepSeek, etc.) works via config/providers.json.
+"""
 from __future__ import annotations
 
 import json
@@ -9,8 +14,6 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
@@ -18,10 +21,10 @@ from pydantic import BaseModel, Field
 
 from file_intelligence_hub.storage.db import Database
 from file_intelligence_hub.storage.top_of_mind_repo import TopOfMindRepo
+from file_intelligence_hub.services.provider_router import send, get_registry
 
 DEFAULT_DB_PATH = Path(os.environ.get("FIHUB_DB_PATH", ".data/file-intelligence-hub.sqlite3"))
 DEFAULT_MODEL = os.environ.get("TOP_OF_MIND_ROUTER_MODEL", "top-of-mind-router")
-DEEPSEEK_DEFAULT_MODEL = "deepseek-v4-flash"
 
 router = APIRouter(prefix="/v1", tags=["openai-compatible"])
 
@@ -191,9 +194,9 @@ def _target_from_text(text: str) -> tuple[Persona | None, str, str]:
             if lowered == token:
                 return persona, "", f"prompt-prefix:{token}"
             if lowered.startswith(token + " "):
-                return persona, stripped[len(token) :].strip(), f"prompt-prefix:{token}"
+                return persona, stripped[len(token):].strip(), f"prompt-prefix:{token}"
             if token.endswith(":") and lowered.startswith(token):
-                return persona, stripped[len(token) :].strip(), f"prompt-prefix:{token}"
+                return persona, stripped[len(token):].strip(), f"prompt-prefix:{token}"
     return None, stripped, "default"
 
 
@@ -248,19 +251,12 @@ def _add_persona_system_message(messages: list[ChatMessage], persona: Persona) -
     return [ChatMessage(role="system", content=f"{persona.instructions}\n\n{safety}"), *messages]
 
 
-def _response_input_to_messages(request: ResponsesRequest) -> list[ChatMessage]:
-    messages: list[ChatMessage] = []
-    if request.instructions:
-        messages.append(ChatMessage(role="system", content=request.instructions))
-    if isinstance(request.input, str):
-        messages.append(ChatMessage(role="user", content=request.input))
-    elif isinstance(request.input, list):
-        for item in request.input:
-            if isinstance(item, ResponseInputItem):
-                messages.append(ChatMessage(role=item.role or "user", content=item.content))
-            elif isinstance(item, dict):
-                messages.append(ChatMessage(role=str(item.get("role") or "user"), content=item.get("content")))
-    return messages
+def _messages_to_dicts(messages: list[ChatMessage]) -> list[dict[str, Any]]:
+    return [
+        {"role": m.role, "content": _content_to_text(m.content)}
+        for m in messages
+        if _content_to_text(m.content).strip()
+    ]
 
 
 def _build_router_reply(
@@ -294,40 +290,50 @@ def _build_router_reply(
             "messages": [message.model_dump() for message in messages],
         },
     )
+
+    # ── Provider routing (replaces hardcoded DeepSeek) ────────────────
+    content = ""
     provider_metadata: dict[str, Any] = {
-        "provider": "router-placeholder",
+        "provider": "none",
         "persona": persona.id,
         "persona_label": persona.label,
         "route_reason": route_reason,
     }
-    content = ""
-    if os.environ.get("DEEPSEEK_API_KEY"):
+
+    registry = get_registry()
+    default_provider = registry.default_provider()
+
+    if default_provider:
         try:
-            content = _call_deepseek(routed_messages)
+            content, provider_metadata = send(
+                _messages_to_dicts(routed_messages),
+                model=model if model != DEFAULT_MODEL else None,
+                fallback=True,
+            )
+        except RuntimeError as exc:
             provider_metadata = {
-                "provider": "deepseek",
-                "model": os.environ.get("DEEPSEEK_MODEL", DEEPSEEK_DEFAULT_MODEL),
+                "provider": default_provider.id if default_provider else "none",
+                "error": str(exc),
                 "persona": persona.id,
                 "persona_label": persona.label,
                 "route_reason": route_reason,
             }
-        except RuntimeError as exc:
-            provider_metadata = {"provider": "deepseek", "error": str(exc)}
             content = (
-                "Top of Mind router received the Mattermost request, but DeepSeek forwarding failed. "
+                "Top of Mind router received the request, but the provider chain failed. "
                 f"Router error: {exc}"
             )
-    if not content:
+    else:
         content = (
             "Top of Mind router is online. "
-            "I received the Mattermost request and saved it into the AI Crew stream. "
-            "Set DEEPSEEK_API_KEY on the 2828 router to enable real downstream answers."
+            "I received the request and saved it into the AI Crew stream. "
+            "Add a provider via POST /providers to enable real downstream answers."
         )
         if prompt:
             clipped = prompt.replace("\n", " ").strip()
             if len(clipped) > 240:
                 clipped = clipped[:237] + "..."
             content += f"\n\nReceived: {clipped}"
+
     reply = repo.post_message(
         source_id="top-of-mind-router",
         source_label="Top of Mind Router",
@@ -338,49 +344,6 @@ def _build_router_reply(
         metadata={"request_message_id": stored["id"], "model": model, **provider_metadata},
     )
     return content, {"request_message_id": stored["id"], "reply_message_id": reply["id"], **provider_metadata}
-
-
-def _call_deepseek(messages: list[ChatMessage]) -> str:
-    api_key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("DEEPSEEK_API_KEY is not set")
-    base_url = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com").rstrip("/")
-    model = os.environ.get("DEEPSEEK_MODEL", DEEPSEEK_DEFAULT_MODEL)
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": message.role, "content": _content_to_text(message.content)}
-            for message in messages
-            if _content_to_text(message.content).strip()
-        ],
-        "stream": False,
-    }
-    if not payload["messages"]:
-        payload["messages"] = [{"role": "user", "content": ""}]
-    data = json.dumps(payload).encode("utf-8")
-    request = Request(
-        f"{base_url}/chat/completions",
-        data=data,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-    try:
-        with urlopen(request, timeout=float(os.environ.get("DEEPSEEK_TIMEOUT_SECONDS", "60"))) as response:
-            response_body = json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")[:500]
-        raise RuntimeError(f"HTTP {exc.code}: {detail}") from exc
-    except URLError as exc:
-        raise RuntimeError(str(exc.reason)) from exc
-    except TimeoutError as exc:
-        raise RuntimeError("request timed out") from exc
-    try:
-        return str(response_body["choices"][0]["message"]["content"])
-    except (KeyError, IndexError, TypeError) as exc:
-        raise RuntimeError("unexpected DeepSeek response shape") from exc
 
 
 def _chat_payload(content: str, model: str, metadata: dict[str, Any]) -> dict[str, Any]:
@@ -433,17 +396,25 @@ async def _stream_chat(content: str, model: str) -> AsyncIterator[str]:
 
 @router.get("/models")
 def list_models() -> dict[str, Any]:
-    return {
-        "object": "list",
-        "data": [
-            {
-                "id": DEFAULT_MODEL,
+    registry = get_registry()
+    providers = registry.list()
+    models = []
+    for p in providers:
+        if p.enabled:
+            models.append({
+                "id": f"{p.id}/{p.model}" if p.model != "auto" else p.id,
                 "object": "model",
                 "created": 0,
-                "owned_by": "top-of-mind",
-            }
-        ],
-    }
+                "owned_by": p.id,
+            })
+    if not models:
+        models.append({
+            "id": DEFAULT_MODEL,
+            "object": "model",
+            "created": 0,
+            "owned_by": "top-of-mind",
+        })
+    return {"object": "list", "data": models}
 
 
 @router.get("/top-of-mind/personas")
@@ -496,3 +467,18 @@ def responses(request: ResponsesRequest):
         "output_text": content,
         "top_of_mind": metadata,
     }
+
+
+def _response_input_to_messages(request: ResponsesRequest) -> list[ChatMessage]:
+    messages: list[ChatMessage] = []
+    if request.instructions:
+        messages.append(ChatMessage(role="system", content=request.instructions))
+    if isinstance(request.input, str):
+        messages.append(ChatMessage(role="user", content=request.input))
+    elif isinstance(request.input, list):
+        for item in request.input:
+            if isinstance(item, ResponseInputItem):
+                messages.append(ChatMessage(role=item.role or "user", content=item.content))
+            elif isinstance(item, dict):
+                messages.append(ChatMessage(role=str(item.get("role") or "user"), content=item.get("content")))
+    return messages

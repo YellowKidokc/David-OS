@@ -19,6 +19,7 @@ from file_intelligence_hub.api.routes_memory import router as memory_router
 from file_intelligence_hub.api.routes_nodes import router as nodes_router
 from file_intelligence_hub.api.routes_openai_compat import router as openai_compat_router
 from file_intelligence_hub.api.routes_prediction import router as prediction_router
+from file_intelligence_hub.api.routes_providers import router as providers_router
 from file_intelligence_hub.api.routes_semantic import router as semantic_router
 from file_intelligence_hub.api.routes_top_of_mind import router as top_of_mind_router
 
@@ -39,6 +40,7 @@ def create_app() -> FastAPI:
     app.include_router(nodes_router)
     app.include_router(openai_compat_router)
     app.include_router(prediction_router)
+    app.include_router(providers_router)
     app.include_router(semantic_router)
     app.include_router(top_of_mind_router)
     app.add_middleware(ApiTokenMiddleware)
