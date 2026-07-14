@@ -2,13 +2,14 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Mic,
   MicOff,
-  Paperclip,
+  Plus,
   Send,
   Sparkles,
   Command,
   CornerDownLeft,
   Zap,
 } from 'lucide-react';
+import { PROMPT_CATEGORIES, PROMPTS, categoryForPrompt, exportPromptsJson } from '../prompts/promptLibrary';
 
 /*
   Composer — the message input bar.
@@ -30,12 +31,7 @@ const SLASH_COMMANDS = [
   { cmd: '/api nlp classify <file_path>', desc: 'POST /fis/classify', icon: Command },
 ];
 
-const QUICK_PROMPTS = [
-  { label: 'Deep dive', text: 'Take a deep dive into this. Explore all angles, identify hidden assumptions, and build a structured analysis.', icon: Sparkles },
-  { label: 'Simplify', text: 'Explain this in the simplest possible terms. Assume I am a beginner.', icon: Zap },
-  { label: 'Critique', text: "Play devil's advocate. What are the strongest objections to this?", icon: Command },
-  { label: 'Connect', text: 'How does this connect to our broader work? Draw explicit links.', icon: Sparkles },
-];
+const QUICK_PROMPTS = PROMPTS.filter((prompt) => ['a1', 'w1', 'd2', 'fis1', 'mf3'].includes(prompt.id));
 
 export function Composer({
   input,
@@ -50,12 +46,18 @@ export function Composer({
   const [showSlash, setShowSlash] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
   const [showPrompts, setShowPrompts] = useState(false);
+  const [promptCategory, setPromptCategory] = useState('analysis');
   const textareaRef = useRef(null);
 
   const normalizedSlashQuery = slashQuery.toLowerCase().replace(/^\//, '');
-  const filteredSlash = SLASH_COMMANDS.filter((c) =>
+  const filteredSlashCommands = SLASH_COMMANDS.filter((c) =>
     c.cmd.toLowerCase().replace(/^\//, '').includes(normalizedSlashQuery)
   );
+  const filteredSlashPrompts = PROMPTS.filter((prompt) => {
+    const haystack = [prompt.label, prompt.category, prompt.text, ...prompt.tags].join(' ').toLowerCase();
+    return haystack.includes(normalizedSlashQuery);
+  }).slice(0, 8);
+  const visiblePrompts = PROMPTS.filter((prompt) => prompt.category === promptCategory);
 
   const handleKeyDown = useCallback(
     (e) => {
@@ -116,6 +118,19 @@ export function Composer({
     textareaRef.current?.focus();
   };
 
+  const handleExportPrompts = async () => {
+    const json = exportPromptsJson();
+    await navigator.clipboard?.writeText?.(json);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'top-of-mind-prompts.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    textareaRef.current?.focus();
+  };
+
   const toggleMic = () => {
     const next = !micOn;
     setMicOn(next);
@@ -157,33 +172,63 @@ export function Composer({
         <button
           className="prompts-toggle"
           onClick={() => setShowPrompts(!showPrompts)}
-          title="Quick prompts"
+          title="Open prompt picker (+ or /)"
         >
-          <Sparkles size={13} /> Prompts
+          <Plus size={13} /> Prompts
         </button>
-        {showPrompts &&
-          QUICK_PROMPTS.map((p) => (
-            <button
-              key={p.label}
-              className="prompt-chip"
-              onClick={() => insertPrompt(p.text)}
-              title={p.text}
-            >
-              <p.icon size={11} /> {p.label}
-            </button>
-          ))}
+        {QUICK_PROMPTS.map((p) => {
+          const CatIcon = categoryForPrompt(p).icon;
+          return <button
+            key={p.id}
+            className="prompt-chip"
+            onClick={() => insertPrompt(p.text)}
+            title={p.text}
+          >
+            <CatIcon size={11} /> {p.label}
+          </button>;
+        })}
       </div>
 
       {/* Slash command autocomplete */}
-      {showSlash && filteredSlash.length > 0 && (
+      {showSlash && (filteredSlashCommands.length > 0 || filteredSlashPrompts.length > 0) && (
         <div className="slash-menu">
-          {filteredSlash.map((c) => (
+          {filteredSlashCommands.map((c) => (
             <button key={c.cmd} onClick={() => insertSlashCommand(c.cmd)}>
               <c.icon size={13} />
               <b>{c.cmd}</b>
               <span>{c.desc}</span>
             </button>
           ))}
+          {filteredSlashPrompts.map((prompt) => {
+            const CatIcon = categoryForPrompt(prompt).icon;
+            return <button key={prompt.id} onClick={() => insertPrompt(prompt.text)}>
+              <CatIcon size={13} />
+              <b>/{prompt.label}</b>
+              <span>{prompt.tags.join(' · ')}</span>
+            </button>;
+          })}
+        </div>
+      )}
+
+      {showPrompts && (
+        <div className="prompt-picker">
+          <div className="prompt-picker-head">
+            <div><b>Prompt picker</b><small>Click + or type / to insert a reusable prompt.</small></div>
+            <button onClick={handleExportPrompts}>Export JSON</button>
+          </div>
+          <div className="prompt-picker-tabs">
+            {PROMPT_CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              return <button key={cat.id} className={promptCategory === cat.id ? 'active' : ''} onClick={() => setPromptCategory(cat.id)}><Icon size={12}/>{cat.label}</button>;
+            })}
+          </div>
+          <div className="prompt-picker-list">
+            {visiblePrompts.map((prompt) => (
+              <button key={prompt.id} onClick={() => insertPrompt(prompt.text)}>
+                <b>{prompt.label}</b><span>{prompt.text}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -199,10 +244,10 @@ export function Composer({
 
         <button
           className="composer-attach"
-          onClick={onAttach}
-          title="Attach file (coming soon)"
+          onClick={() => setShowPrompts((current) => !current)}
+          title="Open prompt picker"
         >
-          <Paperclip size={18} />
+          <Plus size={18} />
         </button>
 
         <textarea
@@ -210,7 +255,7 @@ export function Composer({
           value={input}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder={`Message ${activeSource || 'Top of Mind'}...  Ctrl+Enter to send`}
+          placeholder={`Message ${activeSource || 'Top of Mind'}...  + for prompts, / for prompts and commands`}
           rows={1}
         />
 
