@@ -289,13 +289,25 @@ class GraphStore:
     # ── Import / Export ────────────────────────────────────────────────
 
     def export_hub(self, hub: str) -> dict:
-        """Export all nodes, edges, and anti-edges for a given hub as JSON-serializable dict."""
+        """Export all nodes, edges, and anti-edges for a given hub as JSON-serializable dict.
+        
+        Deduplicates edges and anti-edges since get_edges/get_anti_edges traverse 
+        from both source and destination perspectives.
+        """
         nodes = self.list_nodes(hub=hub)
+        seen_edges = set()
+        seen_anti = set()
         edges = []
         anti_edges = []
         for node in nodes:
-            edges.extend(self.get_edges(node.id))
-            anti_edges.extend(self.get_anti_edges(node.id))
+            for e in self.get_edges(node.id):
+                if e.id not in seen_edges:
+                    seen_edges.add(e.id)
+                    edges.append(e)
+            for ae in self.get_anti_edges(node.id):
+                if ae.id not in seen_anti:
+                    seen_anti.add(ae.id)
+                    anti_edges.append(ae)
         return {
             "hub": hub,
             "nodes": [
