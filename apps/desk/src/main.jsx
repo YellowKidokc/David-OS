@@ -235,10 +235,51 @@ function ApiSettings({ online, setOnline, notice }) {
 }
 
 // ---- Sidebar (unchanged) ----
+
 function Sidebar({ folders, selectedFolder, setSelectedFolder, createFolder, active, setActive }) {
   const sections = ['chats','apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
-  const renderFolder = (f, depth = 0) => <div key={f.id || f.folder_id || f.folder_code}><button className="row" style={{'--depth': depth}} onClick={()=>setSelectedFolder(f)}>{depth ? '└' : '▾'} 📁 {f.name || f.title} <small>{f.folder_code}</small></button>{(f.children || []).map((c)=>renderFolder(c, depth + 1))}<button className="chat" style={{'--depth': depth + 1}}>💬 Current routing chat</button></div>;
-  return <aside className="sidebar"><button className="new">＋ New Chat</button><input className="search" placeholder="Search Chats"/><h3>Folders</h3>{folders.map((f)=>renderFolder(f))}<button className="row" onClick={createFolder}>＋ Create folder via API</button>{sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>◇ {s}</button>)}</aside>;
+  const [collapsed, setCollapsed] = useState({});
+  const [systemOpen, setSystemOpen] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState(() => localStorage.getItem('topOfMind.systemPrompt') || 'You are David OS: concise, structured, and action oriented.');
+  const [searchVars, setSearchVars] = useState({ date: new Date().toISOString().slice(0, 10), time: 'now', size: 'balanced', mode: 'semantic' });
+  const workspaceItems = ['Markdown note', 'Clipboard capture', 'Prompt snippet', 'Chat thread'];
+  const saveSystemPrompt = () => { localStorage.setItem('topOfMind.systemPrompt', systemPrompt); setSystemOpen(false); };
+  const toggleFolder = (id) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
+  const renderFolder = (f, depth = 0) => {
+    const id = f.id || f.folder_id || f.folder_code || f.name;
+    const children = f.children || [];
+    const isCollapsed = collapsed[id];
+    const selected = selectedFolder && (selectedFolder.id || selectedFolder.folder_id || selectedFolder.folder_code || selectedFolder.name) === id;
+    return <div key={id} className="folder-node">
+      <div className={`folder-row ${selected ? 'selected' : ''}`} style={{'--depth': depth}}>
+        <button className="folder-caret" onClick={()=>toggleFolder(id)} aria-label={isCollapsed ? 'Expand folder' : 'Collapse folder'}>{children.length ? (isCollapsed ? '▸' : '▾') : '·'}</button>
+        <button className="folder-name" onClick={()=>setSelectedFolder(f)}>📁 <span>{f.name || f.title}</span> <small>{f.folder_code || children.length}</small></button>
+        <button className="folder-plus" onClick={createFolder} title="Add nested folder or item">＋</button>
+      </div>
+      {!isCollapsed && <div>
+        {children.map((c)=>renderFolder(c, depth + 1))}
+        {depth < 2 && workspaceItems.slice(0, depth === 0 ? 2 : 1).map((item)=><button key={`${id}-${item}`} className="chat asset-item" style={{'--depth': depth + 1}}>▣ {item}</button>)}
+      </div>}
+    </div>;
+  };
+  return <aside className="sidebar">
+    <div className="sidebar-top">
+      <button className="new">＋ New Chat</button>
+      <button className="system-prompt-button" onClick={()=>setSystemOpen(true)} title="Open system prompt">☉</button>
+    </div>
+    <input className="search" placeholder="Search chats, folders, markdown, clipboards"/>
+    <div className="search-vars" aria-label="Search variables">
+      <label>Date<input type="date" value={searchVars.date} onChange={(e)=>setSearchVars({...searchVars, date:e.target.value})}/></label>
+      <label>Time<select value={searchVars.time} onChange={(e)=>setSearchVars({...searchVars, time:e.target.value})}><option>now</option><option>today</option><option>week</option><option>custom</option></select></label>
+      <label>Size<select value={searchVars.size} onChange={(e)=>setSearchVars({...searchVars, size:e.target.value})}><option>balanced</option><option>small</option><option>large</option></select></label>
+      <label>Mode<select value={searchVars.mode} onChange={(e)=>setSearchVars({...searchVars, mode:e.target.value})}><option>semantic</option><option>exact</option><option>recent</option></select></label>
+    </div>
+    <div className="folder-heading"><h3>Folders</h3><button onClick={createFolder}>＋ Folder</button></div>
+    {folders.map((f)=>renderFolder(f))}
+    <h3>Navigation</h3>
+    {sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>◇ {s}</button>)}
+    {systemOpen && <div className="modal-backdrop" onClick={()=>setSystemOpen(false)}><section className="system-modal" onClick={(e)=>e.stopPropagation()}><h2>System Prompt</h2><p>Tune the outside instruction layer before you chat or launch prompts.</p><textarea value={systemPrompt} onChange={(e)=>setSystemPrompt(e.target.value)}/><div><button onClick={()=>setSystemOpen(false)}>Cancel</button><button className="tm-primary" onClick={saveSystemPrompt}>Save prompt</button></div></section></div>}
+  </aside>;
 }
 
 // ---- Funnel (source control) ----
