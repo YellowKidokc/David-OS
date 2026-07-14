@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from typing import Callable
 
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 BASE_SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -411,6 +411,77 @@ def _migration_13(conn: sqlite3.Connection) -> None:
     conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (13)")
 
 
+def _migration_14(conn: sqlite3.Connection) -> None:
+    """Add knowledge graph tables for the Second Brain component.
+    
+    Tables: kg_nodes, kg_edges, anti_edges, graph_index.
+    See graphs/CODEX_BUILD_PROMPT.md for full specification.
+    """
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS kg_nodes (
+            id TEXT PRIMARY KEY,
+            hub TEXT NOT NULL,
+            type TEXT NOT NULL,
+            label TEXT NOT NULL,
+            path TEXT,
+            summary TEXT,
+            chi_score REAL,
+            props_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS kg_edges (
+            id TEXT PRIMARY KEY,
+            src TEXT NOT NULL REFERENCES kg_nodes(id),
+            dst TEXT NOT NULL REFERENCES kg_nodes(id),
+            type TEXT NOT NULL,
+            force TEXT NOT NULL,
+            weight REAL NOT NULL DEFAULT 1.0,
+            evidence_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS anti_edges (
+            id TEXT PRIMARY KEY,
+            src TEXT NOT NULL REFERENCES kg_nodes(id),
+            dst TEXT NOT NULL REFERENCES kg_nodes(id),
+            status TEXT NOT NULL,
+            why_not TEXT,
+            evidence_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS graph_index (
+            node_id TEXT NOT NULL REFERENCES kg_nodes(id),
+            keywords TEXT NOT NULL DEFAULT '',
+            one_liner TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            PRIMARY KEY (node_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_kg_nodes_hub ON kg_nodes(hub);
+        CREATE INDEX IF NOT EXISTS idx_kg_nodes_type ON kg_nodes(type);
+        CREATE INDEX IF NOT EXISTS idx_kg_nodes_label ON kg_nodes(label);
+        CREATE INDEX IF NOT EXISTS idx_kg_edges_src ON kg_edges(src);
+        CREATE INDEX IF NOT EXISTS idx_kg_edges_dst ON kg_edges(dst);
+        CREATE INDEX IF NOT EXISTS idx_kg_edges_type ON kg_edges(type);
+        CREATE INDEX IF NOT EXISTS idx_anti_edges_src ON anti_edges(src);
+        CREATE INDEX IF NOT EXISTS idx_anti_edges_dst ON anti_edges(dst);
+        CREATE INDEX IF NOT EXISTS idx_anti_edges_status ON anti_edges(status);
+        CREATE INDEX IF NOT EXISTS idx_graph_index_keywords ON graph_index(keywords);
+
+        CREATE TRIGGER IF NOT EXISTS kg_nodes_updated_at
+        AFTER UPDATE ON kg_nodes
+        BEGIN
+            UPDATE kg_nodes SET updated_at = datetime('now') WHERE id = NEW.id;
+        END;
+        """
+    )
+    conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (14)")
+
+
 MIGRATIONS: dict[int, Migration] = {
     2: _migration_2,
     3: _migration_3,
@@ -424,6 +495,7 @@ MIGRATIONS: dict[int, Migration] = {
     11: _migration_11,
     12: _migration_12,
     13: _migration_13,
+    14: _migration_14,
 }
 
 
