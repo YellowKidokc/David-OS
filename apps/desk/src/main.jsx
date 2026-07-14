@@ -11,6 +11,51 @@ const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
 const OP_FAMILY_KEY = 'topOfMind.operationFamily';
 const API_SHELF_KEY = 'topOfMind.apiShelf.v1';
 
+const designReferences = [
+  { file: 'chrome_BG6g3qYJ5G.png', label: 'Chat command palette', note: 'Dense model workspace cues' },
+  { file: 'chrome_fGjZEgT7Wr.png', label: 'Prompt library', note: 'Reusable UX blocks' },
+  { file: 'chrome_mutgaehBcB.png', label: 'Agent lanes', note: 'Left rail + source routing' },
+  { file: 'chrome_1pTT3934Gt.png', label: 'Composer focus', note: 'TypingMind-style drafting' },
+  { file: 'msedge_bflkwsFtK1.png', label: 'Wide desk layout', note: 'Full operator surface' },
+  { file: 'msedge_jugvSLM5HJ.png', label: 'Knowledge panel', note: 'FIS adjacency' },
+  { file: 'msedge_2eGy1aGiD6.png', label: 'Model panel', note: 'Provider switching' },
+  { file: 'chrome_Gek3aL6ICu.png', label: 'Thread actions', note: 'Message controls' },
+  { file: 'chrome_FHKv7OTQxX.png', label: 'Settings surface', note: 'Connection affordances' },
+  { file: 'msedge_OpL9mt1z51.png', label: 'API browser', note: 'Registry card density' },
+  { file: 'msedge_9Nckxx8iZY.png', label: 'File intelligence', note: 'Black/gold FIS panel cues' },
+  { file: 'chrome_kkHuVjFalj.png', label: 'Final polish', note: 'Gold active states' },
+].map((item) => ({ ...item, src: new URL(`../../Pics/${item.file}`, import.meta.url).href }));
+
+function ModelExperiencePanel() {
+  return <section className="tm-page model-experience-page">
+    <div className="tm-page-head">
+      <div>
+        <h1>Model Experience Desk</h1>
+        <p>Reference wall for pushing the whole desk toward a TypingMind-like, black/gold power-user flow.</p>
+      </div>
+      <div className="tm-head-actions"><span className="tm-reference-count">{designReferences.length} UI references loaded from apps/Pics</span></div>
+    </div>
+    <div className="model-ux-hero">
+      <div>
+        <span className="gold-kicker">Top of Mind UX target</span>
+        <h2>Model typing, source lanes, FIS context, and operator actions stay one glance away.</h2>
+        <p>These screenshots are now first-class in the desk so every model/chat/API/FIS surface can be compared against the nearby visual references while iterating.</p>
+      </div>
+      <div className="ux-principles">
+        <span>Black shell</span><span>Gold focus</span><span>Dense cards</span><span>Fast composer</span>
+      </div>
+    </div>
+    <div className="reference-grid">
+      {designReferences.map((item)=><article className="reference-card" key={item.file}>
+        <button onClick={()=>window.open(item.src, '_blank', 'noopener')} title={`Open ${item.file}`}>
+          <img src={item.src} alt={`${item.label} UI reference`} loading="lazy" />
+        </button>
+        <div><b>{item.label}</b><small>{item.note}</small><code>{item.file}</code></div>
+      </article>)}
+    </div>
+  </section>;
+}
+
 // ---- fallback data ----
 const fallbackSources = [
   { id: 'clipboard', name: 'Clipboard', status: 'online', source_code: NUMBERING.sources.clipboard },
@@ -572,6 +617,7 @@ function App() {
 
           {/* Other views (unchanged) */}
           {active === 'apis' && <ApiShelfPanel setNotice={setNotice} />}
+          {active === 'models' && <ModelExperiencePanel />}
           {active === 'memory' && <SearchPanel title="Memory search" modeToggle onSearch={(q,m)=>topOfMindApi.searchMemory(q,m==='vector'?'vector':undefined)} />}
           {active === 'files' && <SearchPanel title="File cache search" onSearch={(q)=>topOfMindApi.searchFileCache(q)} />}
           {active === 'settings' && <ApiSettings online={online} setOnline={setOnline} notice={notice} />}
