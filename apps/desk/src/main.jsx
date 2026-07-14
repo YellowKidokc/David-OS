@@ -10,6 +10,7 @@ import './styles.css';
 const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
 const OP_FAMILY_KEY = 'topOfMind.operationFamily';
 const API_SHELF_KEY = 'topOfMind.apiShelf.v1';
+const CUSTOM_AGENTS_KEY = 'topOfMind.customAgents.v1';
 
 // ---- fallback data ----
 const fallbackSources = [
@@ -235,10 +236,59 @@ function ApiSettings({ online, setOnline, notice }) {
 }
 
 // ---- Sidebar (unchanged) ----
+
 function Sidebar({ folders, selectedFolder, setSelectedFolder, createFolder, active, setActive }) {
   const sections = ['chats','apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
-  const renderFolder = (f, depth = 0) => <div key={f.id || f.folder_id || f.folder_code}><button className="row" style={{'--depth': depth}} onClick={()=>setSelectedFolder(f)}>{depth ? '└' : '▾'} 📁 {f.name || f.title} <small>{f.folder_code}</small></button>{(f.children || []).map((c)=>renderFolder(c, depth + 1))}<button className="chat" style={{'--depth': depth + 1}}>💬 Current routing chat</button></div>;
-  return <aside className="sidebar"><button className="new">＋ New Chat</button><input className="search" placeholder="Search Chats"/><h3>Folders</h3>{folders.map((f)=>renderFolder(f))}<button className="row" onClick={createFolder}>＋ Create folder via API</button>{sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>◇ {s}</button>)}</aside>;
+  const [collapsed, setCollapsed] = useState({});
+  const [folderMeta, setFolderMeta] = useState(() => { try { return JSON.parse(localStorage.getItem('topOfMind.folderMeta.v1') || '{}'); } catch { return {}; } });
+  const [systemOpen, setSystemOpen] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState(() => localStorage.getItem('topOfMind.systemPrompt') || 'You are David OS: concise, structured, and action oriented.');
+  const [searchVars, setSearchVars] = useState({ date: new Date().toISOString().slice(0, 10), time: 'now', size: 'balanced', mode: 'semantic' });
+  const workspaceItems = ['Markdown note', 'Clipboard capture', 'Prompt snippet', 'Chat thread'];
+  const saveSystemPrompt = () => { localStorage.setItem('topOfMind.systemPrompt', systemPrompt); setSystemOpen(false); };
+  const persistFolderMeta = (next) => { setFolderMeta(next); localStorage.setItem('topOfMind.folderMeta.v1', JSON.stringify(next)); };
+  const toggleFolder = (id) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
+  const toggleFolderStar = (id) => persistFolderMeta({ ...folderMeta, [id]: { ...(folderMeta[id] || {}), starred: !folderMeta[id]?.starred } });
+  const editFolderTags = (id) => { const tags = prompt('Folder tags, comma separated', (folderMeta[id]?.tags || []).join(', ')); if (tags === null) return; persistFolderMeta({ ...folderMeta, [id]: { ...(folderMeta[id] || {}), tags: tags.split(',').map((tag)=>tag.trim()).filter(Boolean) } }); };
+  const renderFolder = (f, depth = 0) => {
+    const id = f.id || f.folder_id || f.folder_code || f.name;
+    const children = f.children || [];
+    const isCollapsed = collapsed[id];
+    const selected = selectedFolder && (selectedFolder.id || selectedFolder.folder_id || selectedFolder.folder_code || selectedFolder.name) === id;
+    const meta = folderMeta[id] || {};
+    return <div key={id} className="folder-node">
+      <div className={`folder-row ${selected ? 'selected' : ''}`} style={{'--depth': depth}}>
+        <button className="folder-caret" onClick={()=>toggleFolder(id)} aria-label={isCollapsed ? 'Expand folder' : 'Collapse folder'}>{children.length ? (isCollapsed ? '▸' : '▾') : '·'}</button>
+        <button className="folder-name" onClick={()=>setSelectedFolder(f)}>📁 <span>{f.name || f.title}</span> <small>{f.folder_code || children.length}</small></button>
+        <button className={`folder-star ${meta.starred ? 'starred' : ''}`} onClick={()=>toggleFolderStar(id)} title={meta.starred ? 'Unstar folder' : 'Star folder'}>{meta.starred ? '★' : '☆'}</button>
+        <button className="folder-tags" onClick={()=>editFolderTags(id)} title="Edit folder tags">#</button>
+        <button className="folder-plus" onClick={createFolder} title="Add nested folder or item">＋</button>
+      </div>
+      {meta.tags?.length > 0 && <div className="folder-tag-list" style={{'--depth': depth + 1}}>{meta.tags.map((tag)=><span key={tag}>#{tag}</span>)}</div>}
+      {!isCollapsed && <div>
+        {children.map((c)=>renderFolder(c, depth + 1))}
+        {depth < 2 && workspaceItems.slice(0, depth === 0 ? 2 : 1).map((item)=><button key={`${id}-${item}`} className="chat asset-item" style={{'--depth': depth + 1}}>▣ {item}</button>)}
+      </div>}
+    </div>;
+  };
+  return <aside className="sidebar">
+    <div className="sidebar-top">
+      <button className="new">＋ New Chat</button>
+      <button className="system-prompt-button" onClick={()=>setSystemOpen(true)} title="Open system prompt">☉</button>
+    </div>
+    <input className="search" placeholder="Search chats, folders, markdown, clipboards"/>
+    <div className="search-vars" aria-label="Search variables">
+      <label>Date<input type="date" value={searchVars.date} onChange={(e)=>setSearchVars({...searchVars, date:e.target.value})}/></label>
+      <label>Time<select value={searchVars.time} onChange={(e)=>setSearchVars({...searchVars, time:e.target.value})}><option>now</option><option>today</option><option>week</option><option>custom</option></select></label>
+      <label>Size<select value={searchVars.size} onChange={(e)=>setSearchVars({...searchVars, size:e.target.value})}><option>balanced</option><option>small</option><option>large</option></select></label>
+      <label>Mode<select value={searchVars.mode} onChange={(e)=>setSearchVars({...searchVars, mode:e.target.value})}><option>semantic</option><option>exact</option><option>recent</option></select></label>
+    </div>
+    <div className="folder-heading"><h3>Folders</h3><button onClick={createFolder}>＋ Folder</button></div>
+    {folders.map((f)=>renderFolder(f))}
+    <h3>Navigation</h3>
+    {sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>◇ {s}</button>)}
+    {systemOpen && <div className="modal-backdrop" onClick={()=>setSystemOpen(false)}><section className="system-modal" onClick={(e)=>e.stopPropagation()}><h2>System Prompt</h2><p>Tune the outside instruction layer before you chat or launch prompts.</p><textarea value={systemPrompt} onChange={(e)=>setSystemPrompt(e.target.value)}/><div><button onClick={()=>setSystemOpen(false)}>Cancel</button><button className="tm-primary" onClick={saveSystemPrompt}>Save prompt</button></div></section></div>}
+  </aside>;
 }
 
 // ---- Funnel (source control) ----
@@ -261,17 +311,38 @@ const operationFamilies = [
   { id: 'hub', label: 'Hub', icon: '◆', group: 'API Calls' },
 ];
 
-function OperatorSurface({ selectedSource, input, setNotice }) {
+function OperatorSurface({ selectedSource, input, setNotice, setSources }) {
   const [family, setFamilyState] = useState(()=>localStorage.getItem(OP_FAMILY_KEY) || 'hub');
   const [folded, setFolded] = useState(false);
   const [capabilities, setCapabilities] = useState([]);
   const [ahkOnline, setAhkOnline] = useState(false);
   const [profile, setProfile] = useState('TopMind');
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderTab, setBuilderTab] = useState('agent');
+  const [agentDraft, setAgentDraft] = useState({ name: '', role: 'Research assistant', model: 'Claude Opus 4.6', tags: 'custom' });
+  const [apiDraft, setApiDraft] = useState({ name: '', endpoint: '', tags: 'custom' });
   const agent = { id: srcId(selectedSource), name: srcName(selectedSource), source_code: selectedSource?.source_code };
   const selectedFamily = operationFamilies.find((f)=>f.id===family) || operationFamilies[0];
   const setFamily = (id) => { setFamilyState(id); localStorage.setItem(OP_FAMILY_KEY, id); setFolded(false); };
   const status = (name, text) => setNotice(`${name}: ${text}`);
   const bridgeJob = (action, payload = {}) => topOfMindApi.createBridgeJob({ worker: 'ahk-main', action, target: agent, payload, source: 'operator-surface' });
+  const createCustomAgent = () => {
+    const name = agentDraft.name.trim() || agentDraft.role;
+    const customAgent = { id: `custom-agent-${Date.now()}`, name, label: name, source_id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), status: 'online', configured: true, template: agentDraft.role, model: agentDraft.model, tags: agentDraft.tags.split(',').map((tag)=>tag.trim()).filter(Boolean) };
+    const saved = [...(JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]')), customAgent];
+    localStorage.setItem(CUSTOM_AGENTS_KEY, JSON.stringify(saved));
+    setSources((items)=>[...items, customAgent]);
+    setNotice(`Created custom agent: ${name}`);
+    setBuilderOpen(false);
+  };
+  const createCustomApi = () => {
+    const name = apiDraft.name.trim() || apiDraft.endpoint.trim() || 'Custom API';
+    const customApi = { id: `custom-${Date.now()}`, name, categoryId: 'custom', category: 'Imported', status: 'needs_key', endpoint: apiDraft.endpoint.trim() || 'External', desc: `Custom API · tags: ${apiDraft.tags}`, icon: '+', docs: apiDraft.endpoint.trim(), params: [] };
+    const saved = loadCustomApis();
+    localStorage.setItem(API_REGISTRY_KEY, JSON.stringify([...saved, customApi]));
+    setNotice(`Added custom API: ${name}`);
+    setBuilderOpen(false);
+  };
   async function safeCall(name, fn, options = {}) {
     if (options.confirm && !window.confirm(options.confirm)) { status(name, 'cancelled'); return; }
     try { const result = await fn(); status(name, result?.status || result?.message || 'hub request accepted'); }
@@ -333,6 +404,24 @@ function OperatorSurface({ selectedSource, input, setNotice }) {
       {operationFamilies.map((item)=><button key={item.id} className={family===item.id?'active':''} onClick={()=>setFamily(item.id)} aria-label={item.label} title={item.label}>{item.icon}</button>)}
     </nav>
     {!folded && <section className="ops-panel">
+      <div className="builder-card">
+        <button className="builder-plus" onClick={()=>setBuilderOpen(!builderOpen)}>＋ Add agent / API</button>
+        {builderOpen && <div className="builder-form">
+          <div className="builder-tabs"><button className={builderTab==='agent'?'active':''} onClick={()=>setBuilderTab('agent')}>Agent template</button><button className={builderTab==='api'?'active':''} onClick={()=>setBuilderTab('api')}>API card</button></div>
+          {builderTab === 'agent' ? <div className="builder-fields">
+            <input value={agentDraft.name} onChange={(e)=>setAgentDraft({...agentDraft, name:e.target.value})} placeholder="Agent name"/>
+            <select value={agentDraft.role} onChange={(e)=>setAgentDraft({...agentDraft, role:e.target.value})}><option>Research assistant</option><option>Life coach</option><option>Code partner</option><option>Day trading analyst</option><option>Workbook builder</option></select>
+            <input value={agentDraft.model} onChange={(e)=>setAgentDraft({...agentDraft, model:e.target.value})} placeholder="Default model"/>
+            <input value={agentDraft.tags} onChange={(e)=>setAgentDraft({...agentDraft, tags:e.target.value})} placeholder="tags"/>
+            <button className="tm-primary" onClick={createCustomAgent}>Create agent</button>
+          </div> : <div className="builder-fields">
+            <input value={apiDraft.name} onChange={(e)=>setApiDraft({...apiDraft, name:e.target.value})} placeholder="API name"/>
+            <input value={apiDraft.endpoint} onChange={(e)=>setApiDraft({...apiDraft, endpoint:e.target.value})} placeholder="https://... or POST /route"/>
+            <input value={apiDraft.tags} onChange={(e)=>setApiDraft({...apiDraft, tags:e.target.value})} placeholder="tags"/>
+            <button className="tm-primary" onClick={createCustomApi}>Add API</button>
+          </div>}
+        </div>}
+      </div>
       <div className="ahk-layer" aria-label="Persistent AutoHotkey layer">
         <div><b>AHK</b><span className={`dot ${ahkOnline?'ok':'bad'}`}></span></div>
         <small>{ahkOnline?'online':'offline'} · {profile}</small>
@@ -379,7 +468,7 @@ function App() {
 
   // Load messages on mount + polling
   useEffect(()=>{
-    topOfMindApi.getSources().then(d=>{const s=arr(d,'sources'); if(s.length) setSources(s); setOnline(true);}).catch(e=>{setOnline(false); setNotice(e.message);});
+    topOfMindApi.getSources().then(d=>{const s=arr(d,'sources'); const custom = JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]'); if(s.length || custom.length) setSources([...s, ...custom]); setOnline(true);}).catch(e=>{const custom = JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]'); if(custom.length) setSources((current)=>[...current, ...custom]); setOnline(false); setNotice(e.message);});
     topOfMindApi.getFolders().then(d=>setFolders(arr(d,'folders'))).catch(()=>{});
     const loadMessages = () => topOfMindApi.getMessages(75).then(d=>{setMessages(arr(d,'messages')); setOnline(true);}).catch(()=>setOnline(false));
     loadMessages();
@@ -587,7 +676,7 @@ function App() {
       </main>
 
       {/* Operator surface */}
-      <OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice} />
+      <OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice} setSources={setSources} />
 
       {/* Notice toast */}
       {notice && (
