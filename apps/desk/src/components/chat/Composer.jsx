@@ -8,7 +8,19 @@ import {
   Command,
   CornerDownLeft,
   Zap,
+  ChevronDown,
+  Bot,
+  AtSign,
+  Image,
+  FileText,
+  Code,
 } from 'lucide-react';
+
+/*
+  Composer — the message input bar.
+  Features: textarea, send, mic toggle, attach (placeholder),
+  slash-command autocomplete, prompt-chip bar, persona selector.
+*/
 
 const SLASH_COMMANDS = [
   { cmd: '/PROBE', desc: 'Run a structured probe', icon: Zap },
@@ -31,6 +43,15 @@ const QUICK_PROMPTS = [
   { label: 'Connect', text: 'How does this connect to our broader work? Draw explicit links.', icon: Sparkles },
 ];
 
+const PERSONA_QUICK_SELECT = [
+  { id: 'kimi', name: 'Kimi', color: '#22d3ee' },
+  { id: 'claude', name: 'Claude', color: '#fb923c' },
+  { id: 'codex', name: 'Codex', color: '#60a5fa' },
+  { id: 'gemini', name: 'Gemini', color: '#60a5fa' },
+  { id: 'gpt', name: 'GPT', color: '#4ade80' },
+  { id: 'opus', name: 'Opus', color: '#c084fc' },
+];
+
 export function Composer({
   input,
   setInput,
@@ -39,11 +60,16 @@ export function Composer({
   onAttach,
   busy,
   activeSource,
+  sources = [],
+  onSelectSource,
 }) {
   const [micOn, setMicOn] = useState(false);
   const [showSlash, setShowSlash] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
   const [showPrompts, setShowPrompts] = useState(false);
+  const [showPlus, setShowPlus] = useState(false);
+  const [showPersonaMenu, setShowPersonaMenu] = useState(false);
+  const [showMention, setShowMention] = useState(false);
   const textareaRef = useRef(null);
 
   const normalizedSlashQuery = slashQuery.toLowerCase().replace(/^\//, '');
@@ -61,6 +87,9 @@ export function Composer({
       if (e.key === 'Escape') {
         setShowSlash(false);
         setShowPrompts(false);
+        setShowPlus(false);
+        setShowPersonaMenu(false);
+        setShowMention(false);
         return;
       }
       if (e.key === '/' && !showSlash && !input.trim()) {
@@ -74,8 +103,17 @@ export function Composer({
         }
         setSlashQuery((q) => q.slice(0, -1));
       }
+      if (e.key === '@' && !showMention) {
+        setShowMention(true);
+      }
+      if (e.key === 'Backspace' && showMention) {
+        const lastAt = input.lastIndexOf('@');
+        if (lastAt < 0 || input.length - lastAt <= 1) {
+          setShowMention(false);
+        }
+      }
     },
-    [input, busy, onSend, showSlash, slashQuery]
+    [input, busy, onSend, showSlash, slashQuery, showMention]
   );
 
   const handleInput = (e) => {
@@ -86,6 +124,11 @@ export function Composer({
       setSlashQuery(val.slice(1));
     } else {
       setShowSlash(false);
+    }
+    if (val.includes('@')) {
+      setShowMention(true);
+    } else {
+      setShowMention(false);
     }
   };
 
@@ -101,6 +144,31 @@ export function Composer({
     textareaRef.current?.focus();
   };
 
+  const insertMention = (name) => {
+    const lastAt = input.lastIndexOf('@');
+    if (lastAt >= 0) {
+      setInput(input.slice(0, lastAt) + '@' + name + ' ');
+    } else {
+      setInput(input + '@' + name + ' ');
+    }
+    setShowMention(false);
+    textareaRef.current?.focus();
+  };
+
+  const plusActions = [
+    { label: 'Upload file', desc: 'Attach a document, image, audio, or source file', icon: Image, action: onAttach },
+    { label: 'New folder', desc: 'Create a workspace folder or nested subfolder', icon: FileText, action: () => setInput((current) => current ? current : '[New folder] ') },
+    { label: 'Clipboard', desc: 'Save or paste a clipboard item into this chat', icon: Paperclip, action: () => setInput((current) => current ? current + '\n\n[Clipboard] ' : '[Clipboard] ') },
+    { label: 'Markdown note', desc: 'Start a markdown message block', icon: Code, action: () => setInput((current) => current ? current + '\n\n```md\n\n```' : '```md\n\n```') },
+    { label: 'Prompt library', desc: 'Open quick prompt chips and slash commands', icon: Sparkles, action: () => { setShowPrompts(true); setShowSlash(true); } },
+  ];
+
+  const runPlusAction = (action) => {
+    action?.();
+    setShowPlus(false);
+    textareaRef.current?.focus();
+  };
+
   const toggleMic = () => {
     const next = !micOn;
     setMicOn(next);
@@ -110,10 +178,7 @@ export function Composer({
   useEffect(() => {
     if (!micOn) return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setMicOn(false);
-      return;
-    }
+    if (!SpeechRecognition) { setMicOn(false); return; }
     const rec = new SpeechRecognition();
     rec.continuous = true;
     rec.interimResults = true;
@@ -134,9 +199,43 @@ export function Composer({
 
   const canSend = input.trim() && !busy;
 
+  const activePersona = PERSONA_QUICK_SELECT.find((p) =>
+    activeSource?.toLowerCase().includes(p.id)
+  ) || PERSONA_QUICK_SELECT[0];
+
   return (
     <div className="composer-panel">
-      <div className="composer-prompts">
+      {/* Persona quick-select bar */}
+      <div className="composer-personas">
+        <button
+          className="persona-current"
+          onClick={() => setShowPersonaMenu(!showPersonaMenu)}
+          style={{ '--persona-color': activePersona?.color || '#22d3ee' }}
+        >
+          <Bot size={13} />
+          <span>{activeSource || 'Kimi'}</span>
+          <ChevronDown size={12} />
+        </button>
+        {showPersonaMenu && (
+          <div className="persona-menu">
+            {PERSONA_QUICK_SELECT.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  onSelectSource?.(p.name);
+                  setShowPersonaMenu(false);
+                  textareaRef.current?.focus();
+                }}
+                style={{ '--persona-color': p.color }}
+                className={activeSource?.toLowerCase().includes(p.id) ? 'active' : ''}
+              >
+                <span className="persona-dot" />
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="composer-divider" />
         <button
           className="prompts-toggle"
           onClick={() => setShowPrompts(!showPrompts)}
@@ -157,6 +256,7 @@ export function Composer({
           ))}
       </div>
 
+      {/* Slash command autocomplete */}
       {showSlash && filteredSlash.length > 0 && (
         <div className="slash-menu">
           {filteredSlash.map((c) => (
@@ -169,7 +269,43 @@ export function Composer({
         </div>
       )}
 
+      {/* Mention autocomplete */}
+      {showMention && (
+        <div className="mention-menu">
+          {PERSONA_QUICK_SELECT.map((p) => (
+            <button key={p.id} onClick={() => insertMention(p.name)}>
+              <span className="mention-dot" style={{ background: p.color }} />
+              <b>{p.name}</b>
+              <span>@{p.id}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {showPlus && (
+        <div className="plus-menu">
+          {plusActions.map((item) => (
+            <button key={item.label} onClick={() => runPlusAction(item.action)}>
+              <item.icon size={14} />
+              <div>
+                <b>{item.label}</b>
+                <span>{item.desc}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Main input row */}
       <div className="composer-main">
+        <button
+          className="composer-plus"
+          onClick={() => setShowPlus(!showPlus)}
+          title="Open everything menu"
+        >
+          <AtSign size={16} />
+        </button>
+
         <button
           className={`composer-mic ${micOn ? 'mic-on' : ''}`}
           onClick={toggleMic}

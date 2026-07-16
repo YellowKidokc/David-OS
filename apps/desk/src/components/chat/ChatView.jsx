@@ -1,6 +1,13 @@
-import { useMemo, useRef, useEffect } from 'react';
-import { MessageSquare, Pin, Archive, ArrowRightLeft, Clock } from 'lucide-react';
+import { useMemo, useRef, useEffect, useState } from 'react';
+import { Pin, Archive, ArrowRightLeft, Clock, Trash2, Copy, Check } from 'lucide-react';
 import { SourceAvatar, StatusBadge, getSourceMeta } from '../icons/AppIcons';
+
+/*
+  ChatView — the main conversation surface.
+  Renders messages chronologically with source avatars, timestamps,
+  and actions. Groups adjacent messages from the same source.
+  Enhanced with better styling, copy-to-clipboard, and delete.
+*/
 
 function formatTime(iso) {
   if (!iso) return '';
@@ -21,7 +28,24 @@ function formatDate(iso) {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function MessageGroup({ messages, source, onPatch, onSelect }) {
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+  return (
+    <button onClick={handleCopy} title="Copy to clipboard">
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+}
+
+function MessageGroup({ messages, source, onPatch, onSelect, onDelete }) {
   const meta = getSourceMeta(source);
   const first = messages[0];
   const status = first?.status || first?.source_status || 'online';
@@ -43,15 +67,17 @@ function MessageGroup({ messages, source, onPatch, onSelect }) {
       <div className="msg-group-body">
         {messages.map((m) => {
           const id = m.id || m.message_id || m.created_at;
+          const bodyText = m.body || m.content || m.text || m.message || JSON.stringify(m);
           return (
             <div
               key={id}
               className={`msg-bubble ${m.pinned ? 'msg-pinned' : ''} ${m.role === 'user' ? 'msg-user' : ''}`}
               onClick={() => onSelect?.(m)}
             >
-              <p>{m.body || m.content || m.text || m.message || JSON.stringify(m)}</p>
+              <p>{bodyText}</p>
               {m.pinned && <span className="msg-pin-indicator"><Pin size={10} /></span>}
               <div className="msg-bubble-actions">
+                <CopyButton text={bodyText} />
                 <button
                   title={m.pinned ? 'Unpin' : 'Pin'}
                   onClick={(e) => { e.stopPropagation(); onPatch(id, { pinned: !m.pinned }); }}
@@ -70,6 +96,15 @@ function MessageGroup({ messages, source, onPatch, onSelect }) {
                 >
                   <ArrowRightLeft size={12} /> Wall {((m.wall || 1) % 3) + 1}
                 </button>
+                {onDelete && (
+                  <button
+                    className="danger"
+                    title="Delete"
+                    onClick={(e) => { e.stopPropagation(); onDelete(id); }}
+                  >
+                    <Trash2 size={12} /> Delete
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -87,7 +122,7 @@ function DateDivider({ date }) {
   );
 }
 
-export function ChatView({ messages, onPatchMessage, onSelectMessage, filterSource }) {
+export function ChatView({ messages, onPatchMessage, onSelectMessage, onDeleteMessage, filterSource }) {
   const bottomRef = useRef(null);
 
   const grouped = useMemo(() => {
@@ -146,9 +181,19 @@ export function ChatView({ messages, onPatchMessage, onSelectMessage, filterSour
   if (!messages.length) {
     return (
       <div className="chat-empty">
-        <MessageSquare size={48} strokeWidth={1.2} />
-        <h2>No messages yet</h2>
-        <p>Start a conversation or select a source from the funnel.</p>
+        <div className="chat-welcome-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </div>
+        <h2>Welcome to Top of Mind</h2>
+        <p>Your unified AI command desk. All your AI agents in one surface. Start typing below to send a message through the API.</p>
+        <div className="chat-welcome-sources">
+          <span>Kimi CLI</span>
+          <span>Codex</span>
+          <span>AHK</span>
+          <span>Clipboard</span>
+        </div>
       </div>
     );
   }
@@ -165,6 +210,7 @@ export function ChatView({ messages, onPatchMessage, onSelectMessage, filterSour
             source={g.source}
             onPatch={onPatchMessage}
             onSelect={onSelectMessage}
+            onDelete={onDeleteMessage}
           />
         )
       )}
