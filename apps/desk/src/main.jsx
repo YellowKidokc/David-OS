@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { NUMBERING, topOfMindApi } from './lib/api/topOfMindApi';
@@ -6,12 +5,15 @@ import { ChatView } from './components/chat/ChatView';
 import { Composer } from './components/chat/Composer';
 import { SourceFilter } from './components/chat/SourceFilter';
 import { PromptsPanel } from './components/prompts/PromptsPanel';
-import { RightHub } from './components/rightHub/RightHub';
+import { AgentsPanel } from './components/agents/AgentsPanel';
 import './styles.css';
 
 const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
 const OP_FAMILY_KEY = 'topOfMind.operationFamily';
+const API_SHELF_KEY = 'topOfMind.apiShelf.v1';
+const CUSTOM_AGENTS_KEY = 'topOfMind.customAgents.v1';
 
+// ---- fallback data ----
 const fallbackSources = [
   { id: 'clipboard', name: 'Clipboard', status: 'online', source_code: NUMBERING.sources.clipboard },
   { id: 'ahk', name: 'AutoHotkey', status: 'online', source_code: NUMBERING.sources.ahk },
@@ -27,6 +29,7 @@ const starterFolders = [
   ]}
 ];
 
+// ---- helpers ----
 const initials = (s) => (s?.name || s?.label || s?.id || s?.source_id || '?').split(/\s|-/).map((p) => p[0]).join('').slice(0, 3).toUpperCase();
 const srcName = (s) => s?.name || s?.label || s?.source_id || s?.id || 'source';
 const srcId = (s) => s?.id || s?.source_id || s?.name || s?.label;
@@ -46,7 +49,7 @@ const apiRegistryCategories = {
       { id: 'fis_crossfolder', name: 'Cross-Folder Scan', endpoint: 'POST /fis/crossfolder', desc: 'Structural fingerprint comparison', status: 'configured', icon: '\u2318', params: ['folders'] },
       { id: 'fis_classify', name: 'Classify File', endpoint: 'POST /fis/classify', desc: 'Domain classification for a single file', status: 'configured', icon: '\u25C7', params: ['file_path'] },
       { id: 'file_actions', name: 'File Actions', endpoint: 'POST /operator/file-actions', desc: 'Write, append, delete with review gate', status: 'active', icon: '\u270E', params: ['action', 'path', 'text'] },
-      { id: 'folders', name: 'Folder Profiles', endpoint: 'GET /folders', desc: 'List and manage watched folders', status: 'active', icon: '\uD83D\uDCC1', params: [] },
+      { id: 'folders', name: 'Folder Profiles', endpoint: 'GET /folders', desc: 'List and manage watched folders', status: 'active', icon: '\u{1F4C1}', params: [] },
     ],
   },
   communication: {
@@ -205,8 +208,8 @@ function ApiShelfPanel({ setNotice }) {
               <span className={`api-status ${api.status}`}>{(api.status || 'offline').replace('_',' ')}</span>
             </div>
             <div className="tm-card-footer">
-              <button onClick={(e)=>{e.stopPropagation(); copyApi(api); }}>\u29C9 Copy</button>
-              <button onClick={(e)=>{e.stopPropagation(); setSelectedId(api.id); setTryBody(JSON.stringify(Object.fromEntries((api.params || []).map((param)=>[param, ''])), null, 2)); }}>Use now</button>
+              <button onClick={(e)=>{e.stopPropagation(); copyApi(api);}}>\u29C9 Copy</button>
+              <button onClick={(e)=>{e.stopPropagation(); setSelectedId(api.id); setTryBody(JSON.stringify(Object.fromEntries((api.params || []).map((param)=>[param, ''])), null, 2));}}>Use now</button>
             </div>
           </article>)}
         </div>
@@ -226,28 +229,77 @@ function ApiShelfPanel({ setNotice }) {
   </section>;
 }
 
-// ---- Settings ----
+// ---- Settings (unchanged) ----
 function ApiSettings({ online, setOnline, notice }) {
   const [url, setUrl] = useState(topOfMindApi.baseUrl);
   async function test() { topOfMindApi.setBaseUrl(url); try { await topOfMindApi.test(); setOnline(true); } catch { setOnline(false); } }
   return <section className="panel settings"><h3>API Settings</h3><input value={url} onChange={(e)=>setUrl(e.target.value)} placeholder="http://127.0.0.1:10000"/><button onClick={()=>{topOfMindApi.setBaseUrl(url); test();}}>Save + Test</button><span className={`status ${online?'ok':'bad'}`}>{online ? 'online' : 'offline'}</span>{notice && <p>{notice}</p>}</section>;
 }
 
-// ---- Sidebar ----
+// ---- Sidebar (unchanged) ----
+
 function Sidebar({ folders, selectedFolder, setSelectedFolder, createFolder, active, setActive }) {
-  const sections = ['chats','apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
-  const renderFolder = (f, depth = 0) => <div key={f.id || f.folder_id || f.folder_code}><button className="row" style={{'--depth': depth}} onClick={()=>setSelectedFolder(f)}>{depth ? '\u2514' : '\u25BE'} \uD83D\uDCC1 {f.name || f.title} <small>{f.folder_code}</small></button>{(f.children || []).map((c)=>renderFolder(c, depth + 1))}<button className="chat" style={{'--depth': depth + 1}}>\uD83D\uDCAC Current routing chat</button></div>;
-  return <aside className="sidebar"><button className="new">\uFF0B New Chat</button><input className="search" placeholder="Search Chats"/><h3>Folders</h3>{folders.map((f)=>renderFolder(f))}<button className="row" onClick={createFolder}>\uFF0B Create folder via API</button>{sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>\u25C7 {s}</button>)}</aside>;
+  const sections = ['agents','chats','apis','prompts','memory','files','operator','settings'];
+  const [collapsed, setCollapsed] = useState({});
+  const [folderMeta, setFolderMeta] = useState(() => { try { return JSON.parse(localStorage.getItem('topOfMind.folderMeta.v1') || '{}'); } catch { return {}; } });
+  const [systemOpen, setSystemOpen] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState(() => localStorage.getItem('topOfMind.systemPrompt') || 'You are David OS: concise, structured, and action oriented.');
+  const [searchVars, setSearchVars] = useState({ date: new Date().toISOString().slice(0, 10), time: 'now', size: 'balanced', mode: 'semantic' });
+  const workspaceItems = ['Markdown note', 'Clipboard capture', 'Prompt snippet', 'Chat thread'];
+  const saveSystemPrompt = () => { localStorage.setItem('topOfMind.systemPrompt', systemPrompt); setSystemOpen(false); };
+  const persistFolderMeta = (next) => { setFolderMeta(next); localStorage.setItem('topOfMind.folderMeta.v1', JSON.stringify(next)); };
+  const toggleFolder = (id) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
+  const toggleFolderStar = (id) => persistFolderMeta({ ...folderMeta, [id]: { ...(folderMeta[id] || {}), starred: !folderMeta[id]?.starred } });
+  const editFolderTags = (id) => { const tags = prompt('Folder tags, comma separated', (folderMeta[id]?.tags || []).join(', ')); if (tags === null) return; persistFolderMeta({ ...folderMeta, [id]: { ...(folderMeta[id] || {}), tags: tags.split(',').map((tag)=>tag.trim()).filter(Boolean) } }); };
+  const renderFolder = (f, depth = 0) => {
+    const id = f.id || f.folder_id || f.folder_code || f.name;
+    const children = f.children || [];
+    const isCollapsed = collapsed[id];
+    const selected = selectedFolder && (selectedFolder.id || selectedFolder.folder_id || selectedFolder.folder_code || selectedFolder.name) === id;
+    const meta = folderMeta[id] || {};
+    return <div key={id} className="folder-node">
+      <div className={`folder-row ${selected ? 'selected' : ''}`} style={{'--depth': depth}}>
+        <button className="folder-caret" onClick={()=>toggleFolder(id)} aria-label={isCollapsed ? 'Expand folder' : 'Collapse folder'}>{children.length ? (isCollapsed ? '\u25B8' : '\u25BE') : '\u00B7'}</button>
+        <button className="folder-name" onClick={()=>setSelectedFolder(f)}>\u{1F4C1} <span>{f.name || f.title}</span> <small>{f.folder_code || children.length}</small></button>
+        <button className={`folder-star ${meta.starred ? 'starred' : ''}`} onClick={()=>toggleFolderStar(id)} title={meta.starred ? 'Unstar folder' : 'Star folder'}>{meta.starred ? '\u2605' : '\u2606'}</button>
+        <button className="folder-tags" onClick={()=>editFolderTags(id)} title="Edit folder tags">#</button>
+        <button className="folder-plus" onClick={createFolder} title="Add nested folder or item">\uFF0B</button>
+      </div>
+      {meta.tags?.length > 0 && <div className="folder-tag-list" style={{'--depth': depth + 1}}>{meta.tags.map((tag)=><span key={tag}>#{tag}</span>)}</div>}
+      {!isCollapsed && <div>
+        {children.map((c)=>renderFolder(c, depth + 1))}
+        {depth < 2 && workspaceItems.slice(0, depth === 0 ? 2 : 1).map((item)=><button key={`${id}-${item}`} className="chat asset-item" style={{'--depth': depth + 1}}>\u25A3 {item}</button>)}
+      </div>}
+    </div>;
+  };
+  return <aside className="sidebar">
+    <div className="sidebar-top">
+      <button className="new">\uFF0B New Chat</button>
+      <button className="system-prompt-button" onClick={()=>setSystemOpen(true)} title="Open system prompt">\u2609</button>
+    </div>
+    <input className="search" placeholder="Search chats, folders, markdown, clipboards"/>
+    <div className="search-vars" aria-label="Search variables">
+      <label>Date<input type="date" value={searchVars.date} onChange={(e)=>setSearchVars({...searchVars, date:e.target.value})}/></label>
+      <label>Time<select value={searchVars.time} onChange={(e)=>setSearchVars({...searchVars, time:e.target.value})}><option>now</option><option>today</option><option>week</option><option>custom</option></select></label>
+      <label>Size<select value={searchVars.size} onChange={(e)=>setSearchVars({...searchVars, size:e.target.value})}><option>balanced</option><option>small</option><option>large</option></select></label>
+      <label>Mode<select value={searchVars.mode} onChange={(e)=>setSearchVars({...searchVars, mode:e.target.value})}><option>semantic</option><option>exact</option><option>recent</option></select></label>
+    </div>
+    <div className="folder-heading"><h3>Folders</h3><button onClick={createFolder}>\uFF0B Folder</button></div>
+    {folders.map((f)=>renderFolder(f))}
+    <h3>Navigation</h3>
+    {sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>\u25C7 {s}</button>)}
+    {systemOpen && <div className="modal-backdrop" onClick={()=>setSystemOpen(false)}><section className="system-modal" onClick={(e)=>e.stopPropagation()}><h2>System Prompt</h2><p>Tune the outside instruction layer before you chat or launch prompts.</p><textarea value={systemPrompt} onChange={(e)=>setSystemPrompt(e.target.value)}/><div><button onClick={()=>setSystemOpen(false)}>Cancel</button><button className="tm-primary" onClick={saveSystemPrompt}>Save prompt</button></div></section></div>}
+  </aside>;
 }
 
-// ---- Funnel ----
+// ---- Funnel (source control) ----
 function Funnel({ sources, setSources, selectedMessage, patchMessage, collapsed, setCollapsed, activeAgentId, setActiveAgentId }) {
   const toggle = (id, key) => setSources((ss)=>ss.map((s)=> (s.id||s.name)===id ? {...s, [key]: !s[key], status: key==='paused' ? 'paused' : s.status} : s));
   const assign = (field, value) => selectedMessage && patchMessage(selectedMessage.id || selectedMessage.message_id, { [field]: value });
   return <aside className={`funnel ${collapsed?'collapsed':''}`}><button onClick={()=>setCollapsed(!collapsed)}>{collapsed?'\u25B6':'\u25C0'}</button>{!collapsed && <><h3>Funnel</h3>{sources.map((s)=>{ const id = srcId(s); const isActive = id === activeAgentId; return <div className={`source ${isActive?'active-source':''}`} key={id} onClick={()=>setActiveAgentId(id)} role="button" tabIndex="0" onKeyDown={(e)=>{if(e.key==='Enter'||e.key===' ') setActiveAgentId(id);}}><span className="avatar">{initials(s)}</span><b>{srcName(s)}</b><em>{isActive ? 'active' : (s.status||'online')}</em><button onClick={(e)=>{e.stopPropagation();toggle(id,'paused');}}>pause</button><button onClick={(e)=>{e.stopPropagation();toggle(id,'muted');}}>mute</button><label onClick={(e)=>e.stopPropagation()}><input type="checkbox" defaultChecked/> include</label><small>priority {s.priority || s.priority_code || 'normal'} \u00B7 {s.configured === false ? 'not configured' : 'configured'}</small></div>})}<h3>Assign selected</h3><button onClick={()=>assign('wall_code', NUMBERING.walls.main)}>Main wall</button><button onClick={()=>assign('wall_code', NUMBERING.walls.code)}>Code wall</button><button onClick={()=>assign('folder_code', NUMBERING.folders.active)}>Active folder</button><div className="grid"><button onClick={()=>topOfMindApi.combine({})}>combine</button><button>split draft</button><button>broadcast draft</button><button onClick={()=>topOfMindApi.endAll()}>end all</button></div></>}</aside>;
 }
 
-// ---- Operator Surface ----
+// ---- Operator Surface (unchanged from original) ----
 const operationFamilies = [
   { id: 'ahk', label: 'AHK', icon: '\u2328', group: 'AutoHotkey' },
   { id: 'clipboard', label: 'Clipboard', icon: '\u29C9', group: 'Clipboard' },
@@ -260,17 +312,38 @@ const operationFamilies = [
   { id: 'hub', label: 'Hub', icon: '\u25C6', group: 'API Calls' },
 ];
 
-function OperatorSurface({ selectedSource, input, setNotice }) {
+function OperatorSurface({ selectedSource, input, setNotice, setSources }) {
   const [family, setFamilyState] = useState(()=>localStorage.getItem(OP_FAMILY_KEY) || 'hub');
   const [folded, setFolded] = useState(false);
   const [capabilities, setCapabilities] = useState([]);
   const [ahkOnline, setAhkOnline] = useState(false);
   const [profile, setProfile] = useState('TopMind');
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderTab, setBuilderTab] = useState('agent');
+  const [agentDraft, setAgentDraft] = useState({ name: '', role: 'Research assistant', model: 'Claude Opus 4.6', tags: 'custom' });
+  const [apiDraft, setApiDraft] = useState({ name: '', endpoint: '', tags: 'custom' });
   const agent = { id: srcId(selectedSource), name: srcName(selectedSource), source_code: selectedSource?.source_code };
   const selectedFamily = operationFamilies.find((f)=>f.id===family) || operationFamilies[0];
   const setFamily = (id) => { setFamilyState(id); localStorage.setItem(OP_FAMILY_KEY, id); setFolded(false); };
   const status = (name, text) => setNotice(`${name}: ${text}`);
   const bridgeJob = (action, payload = {}) => topOfMindApi.createBridgeJob({ worker: 'ahk-main', action, target: agent, payload, source: 'operator-surface' });
+  const createCustomAgent = () => {
+    const name = agentDraft.name.trim() || agentDraft.role;
+    const customAgent = { id: `custom-agent-${Date.now()}`, name, label: name, source_id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), status: 'online', configured: true, template: agentDraft.role, model: agentDraft.model, tags: agentDraft.tags.split(',').map((tag)=>tag.trim()).filter(Boolean) };
+    const saved = [...(JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]')), customAgent];
+    localStorage.setItem(CUSTOM_AGENTS_KEY, JSON.stringify(saved));
+    setSources((items)=>[...items, customAgent]);
+    setNotice(`Created custom agent: ${name}`);
+    setBuilderOpen(false);
+  };
+  const createCustomApi = () => {
+    const name = apiDraft.name.trim() || apiDraft.endpoint.trim() || 'Custom API';
+    const customApi = { id: `custom-${Date.now()}`, name, categoryId: 'custom', category: 'Imported', status: 'needs_key', endpoint: apiDraft.endpoint.trim() || 'External', desc: `Custom API \u00B7 tags: ${apiDraft.tags}`, icon: '+', docs: apiDraft.endpoint.trim(), params: [] };
+    const saved = loadCustomApis();
+    localStorage.setItem(API_REGISTRY_KEY, JSON.stringify([...saved, customApi]));
+    setNotice(`Added custom API: ${name}`);
+    setBuilderOpen(false);
+  };
   async function safeCall(name, fn, options = {}) {
     if (options.confirm && !window.confirm(options.confirm)) { status(name, 'cancelled'); return; }
     try { const result = await fn(); status(name, result?.status || result?.message || 'hub request accepted'); }
@@ -332,6 +405,24 @@ function OperatorSurface({ selectedSource, input, setNotice }) {
       {operationFamilies.map((item)=><button key={item.id} className={family===item.id?'active':''} onClick={()=>setFamily(item.id)} aria-label={item.label} title={item.label}>{item.icon}</button>)}
     </nav>
     {!folded && <section className="ops-panel">
+      <div className="builder-card">
+        <button className="builder-plus" onClick={()=>setBuilderOpen(!builderOpen)}>\uFF0B Add agent / API</button>
+        {builderOpen && <div className="builder-form">
+          <div className="builder-tabs"><button className={builderTab==='agent'?'active':''} onClick={()=>setBuilderTab('agent')}>Agent template</button><button className={builderTab==='api'?'active':''} onClick={()=>setBuilderTab('api')}>API card</button></div>
+          {builderTab === 'agent' ? <div className="builder-fields">
+            <input value={agentDraft.name} onChange={(e)=>setAgentDraft({...agentDraft, name:e.target.value})} placeholder="Agent name"/>
+            <select value={agentDraft.role} onChange={(e)=>setAgentDraft({...agentDraft, role:e.target.value})}><option>Research assistant</option><option>Life coach</option><option>Code partner</option><option>Day trading analyst</option><option>Workbook builder</option></select>
+            <input value={agentDraft.model} onChange={(e)=>setAgentDraft({...agentDraft, model:e.target.value})} placeholder="Default model"/>
+            <input value={agentDraft.tags} onChange={(e)=>setAgentDraft({...agentDraft, tags:e.target.value})} placeholder="tags"/>
+            <button className="tm-primary" onClick={createCustomAgent}>Create agent</button>
+          </div> : <div className="builder-fields">
+            <input value={apiDraft.name} onChange={(e)=>setApiDraft({...apiDraft, name:e.target.value})} placeholder="API name"/>
+            <input value={apiDraft.endpoint} onChange={(e)=>setApiDraft({...apiDraft, endpoint:e.target.value})} placeholder="https://... or POST /route"/>
+            <input value={apiDraft.tags} onChange={(e)=>setApiDraft({...apiDraft, tags:e.target.value})} placeholder="tags"/>
+            <button className="tm-primary" onClick={createCustomApi}>Add API</button>
+          </div>}
+        </div>}
+      </div>
       <div className="ahk-layer" aria-label="Persistent AutoHotkey layer">
         <div><b>AHK</b><span className={`dot ${ahkOnline?'ok':'bad'}`}></span></div>
         <small>{ahkOnline?'online':'offline'} \u00B7 {profile}</small>
@@ -350,7 +441,7 @@ function OperatorSurface({ selectedSource, input, setNotice }) {
   </aside>;
 }
 
-// ---- Search panels ----
+// ---- Search panels (unchanged) ----
 function SearchPanel({ title, modeToggle, onSearch }) {
   const [q, setQ] = useState(''); const [mode, setMode] = useState('text'); const [results, setResults] = useState([]);
   async function run(){ try { setResults(arr(await onSearch(q, mode), 'items')); } catch { setResults([{ name: 'API offline', content: 'Search could not run.' }]); } }
@@ -365,7 +456,7 @@ function App() {
   const [folders, setFolders] = useState(starterFolders);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [active, setActive] = useState('chats');
+  const [active, setActive] = useState('agents');
   const [selectedFolder, setSelectedFolder] = useState(starterFolders[0]);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [online, setOnline] = useState(false);
@@ -376,9 +467,8 @@ function App() {
 
   const setActiveAgentId = (id) => { setActiveAgentIdState(id); localStorage.setItem(ACTIVE_AGENT_KEY, id); };
 
-  // Load messages on mount + polling
   useEffect(()=>{
-    topOfMindApi.getSources().then(d=>{const s=arr(d,'sources'); if(s.length) setSources(s); setOnline(true);}).catch(e=>{setOnline(false); setNotice(e.message);});
+    topOfMindApi.getSources().then(d=>{const s=arr(d,'sources'); const custom = JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]'); if(s.length || custom.length) setSources([...s, ...custom]); setOnline(true);}).catch(e=>{const custom = JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]'); if(custom.length) setSources((current)=>[...current, ...custom]); setOnline(false); setNotice(e.message);});
     topOfMindApi.getFolders().then(d=>setFolders(arr(d,'folders'))).catch(()=>{});
     const loadMessages = () => topOfMindApi.getMessages(75).then(d=>{setMessages(arr(d,'messages')); setOnline(true);}).catch(()=>setOnline(false));
     loadMessages();
@@ -402,7 +492,6 @@ function App() {
     throw new Error('Unknown /api command. Try /api filesystem intake <source_folder>, /api comm send codex "message", or /api nlp classify <file_path>.');
   }
 
-  // Send message
   async function send() {
     if (!input.trim()) return;
     if (input.trim().toLowerCase().startsWith('/api ')) {
@@ -434,40 +523,23 @@ function App() {
     }
   }
 
-  // Send message from a specific pane (for multi-chat)
-  async function sendFromPane({ body, source_id, source_label }) {
-    if (!body?.trim()) return;
-    const payload = {
-      source_id: source_id || srcId(selectedSource),
-      source_label: source_label || srcName(selectedSource),
-      body: body,
-      role: 'user',
-      wall: 'main',
-      folder: selectedFolder.name || 'Main'
-    };
-    try {
-      const saved = await topOfMindApi.createMessage(payload);
-      setMessages((m)=>[...m, saved]);
-    } catch {
-      setMessages((m)=>[...m, {...payload, id: `local-${Date.now()}`, created_at: new Date().toISOString()}]);
-      setNotice('Draft shown locally; API post failed.');
-    }
-  }
-
-  // Patch a message
   async function patchMessage(id, body) {
     setMessages(ms=>ms.map(m=>(m.id===id||m.message_id===id)?{...m,...body}:m));
     try { await topOfMindApi.updateMessage(id, body); } catch { setNotice('Local patch shown; API patch failed.'); }
   }
 
-  // Create folder
+  async function deleteMessage(id) {
+    if (!window.confirm('Delete this message?')) return;
+    setMessages(ms=>ms.filter(m=>m.id!==id&&m.message_id!==id));
+    setNotice('Message deleted locally.');
+  }
+
   async function createFolder() {
     const name = prompt('Folder name?');
     if (!name) return;
     try { const f = await topOfMindApi.createFolder({ name, parent_id: selectedFolder.id || selectedFolder.folder_id }); setFolders(fs=>[...fs, f]); } catch { setNotice('Folder must be created by API; request failed.'); }
   }
 
-  // Message counts by source
   const messageCounts = useMemo(() => {
     const bySource = {};
     messages.forEach((m) => {
@@ -477,30 +549,33 @@ function App() {
     return { total: messages.length, bySource };
   }, [messages]);
 
-  // Copy prompt to composer
   const copyPromptToComposer = useCallback((text) => {
     setInput((current) => (current ? current + '\n\n' + text : text));
   }, []);
 
-  // Mic toggle
   const handleMicToggle = useCallback((enabled) => {
     setNotice(`Microphone ${enabled ? 'on' : 'off'}`);
   }, []);
 
-  // Attach (placeholder)
   const handleAttach = useCallback(() => {
     setNotice('Attachments coming soon \u2014 needs upload endpoint.');
   }, []);
 
-  // Derive active source name for composer placeholder
   const activeSourceName = srcName(selectedSource);
+
+  const handleSelectAgent = (agent) => {
+    setActiveAgentId(agent.id || agent.name);
+    setActive('chats');
+    setChatFilter(agent.id || agent.name);
+    setNotice(`Switched to ${agent.name}`);
+  };
 
   return (
     <div className="app">
       {/* Left rail */}
       <nav className="rail">
         <b>ToM</b>
-        {['chats','apis','prompts','memory','files','operator','settings'].map(x => (
+        {['agents','chats','apis','prompts','memory','files','operator','settings'].map(x => (
           <button className={active===x?'on':''} onClick={()=>setActive(x)} key={x}>
             {x[0].toUpperCase()}
           </button>
@@ -539,10 +614,19 @@ function App() {
         </header>
 
         <section className="workspace">
+          {/* Agents view */}
+          {active === 'agents' && (
+            <AgentsPanel
+              sources={sources}
+              messageCounts={messageCounts}
+              onSelectAgent={handleSelectAgent}
+              activeAgentId={activeAgentId}
+            />
+          )}
+
           {/* Chats view */}
           {active === 'chats' && (
             <div className="chats-layout">
-              {/* Source filter rail */}
               <SourceFilter
                 sources={sources}
                 activeFilter={chatFilter}
@@ -551,16 +635,15 @@ function App() {
                 online={online}
               />
 
-              {/* Chat area */}
               <div className="chats-main">
                 <ChatView
                   messages={messages}
                   onPatchMessage={patchMessage}
                   onSelectMessage={setSelectedMessage}
+                  onDeleteMessage={deleteMessage}
                   filterSource={chatFilter}
                 />
 
-                {/* Footer composer */}
                 <footer className="chat-footer">
                   <div className="cmd">
                     <button onClick={()=>topOfMindApi.combine({ folder_code: selectedFolder.folder_code })}>Combine</button>
@@ -578,6 +661,11 @@ function App() {
                     onAttach={handleAttach}
                     busy={false}
                     activeSource={activeSourceName}
+                    sources={sources}
+                    onSelectSource={(name) => {
+                      const src = sources.find((s) => srcName(s).toLowerCase() === name.toLowerCase());
+                      if (src) setActiveAgentId(srcId(src));
+                    }}
                   />
                 </footer>
               </div>
@@ -605,18 +693,8 @@ function App() {
         </section>
       </main>
 
-      {/* Right Hub \u2014 AI Communication Panel */}
-      <RightHub
-        sources={sources}
-        messages={messages}
-        onSendMessage={sendFromPane}
-        onPatchMessage={patchMessage}
-        activeAgentId={activeAgentId}
-        onSetActiveAgent={setActiveAgentId}
-      />
-
       {/* Operator surface */}
-      <OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice} />
+      <OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice} setSources={setSources} />
 
       {/* Notice toast */}
       {notice && (
