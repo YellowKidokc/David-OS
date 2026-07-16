@@ -2,3 +2,20 @@ tools/prompt-launcher/.playwright-profile/
 tools/prompt-launcher/node_modules/
 tools/prompt-launcher/research_exports/
 tools/prompt-launcher/config.local.json
+
+# Local recovery archives and generated application output
+_archive_wrong_*/
+apps/desk/node_modules/
+apps/desk/dist/
+apps/desk/*.log
+
+# Runtime and secret-bearing local files
+**/__pycache__/
+*.py[cod]
+*.log
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-journal
+*.env
+!.env.example
