@@ -1,45 +1,27 @@
 # Top of Mind Desk
 
-React/Vite frontend for the Top of Mind API. The default API base is `http://127.0.0.1:10000`.
+This folder is now the David-OS home for the installed **Top of Mind** PWA.
 
-## Install
+Source of this recovery:
 
-```bash
-cd apps/desk
+- Installed app: `top-of-mind.davidokc28.workers.dev-80408DAD_th1rnh3hv9v56!App`
+- Live URL: `https://top-of-mind.davidokc28.workers.dev/`
+- Capture: `D:\00_CANON_REFERENCE\04_SOURCE_POINTERS\top_of_mind_installed_app_capture`
+
+The previous local desk implementation was archived, not deleted:
+
+- `D:\GitHub\David-OS\_archive_wrong_desk_20260715_151224`
+
+## Commands
+
+```powershell
 npm install
-```
-
-## Development
-
-```bash
 npm run dev
-```
-
-## Build
-
-```bash
 npm run build
 ```
 
-## API base override
+The app expects the local David-OS API at:
 
-Create an environment file or export the variable before starting Vite:
+`http://127.0.0.1:10000`
 
-```bash
-VITE_TOP_OF_MIND_API=http://127.0.0.1:10000 npm run dev
-```
-
-The in-app API settings panel also lets you edit the base URL, saves it to `localStorage`, and tests connectivity.
-
-## Wired panels and endpoints
-
-- Top of Mind sources, messages, combine, and end-all controls.
-- Durable folders via `GET /folders` and `POST /folders`; nested folders use API `parent_id` and `folder_code`.
-- Memory search with text mode and vector mode.
-- File cache search.
-- Funnel sidebar for source include/exclude, pause/mute/status display, and selected-message routing drafts.
-- Operator draft panel for `write_text` and `append_text` payloads. It intentionally does not run destructive actions by default.
-
-## Numbering defaults
-
-Message posts include human labels plus numeric `source_code`, `type_code`, `priority_code`, `wall_code`, and `folder_code` defaults for Clipboard, AHK, Codex, Kimi CLI, normal/response/clipboard types, normal/high priority, main/code walls, and inbox/active folders.
+The recovered bundle is currently a built PWA bundle, not the original editable React/TSX source. The bundle contains `code-path` markers, so the editable source can be reconstructed later.
