@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from typing import Callable
 
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 BASE_SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -411,6 +411,24 @@ def _migration_13(conn: sqlite3.Connection) -> None:
     conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (13)")
 
 
+def _migration_14(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(clipboard_items)").fetchall()}
+    additions = {
+        "content_hash": "ALTER TABLE clipboard_items ADD COLUMN content_hash TEXT NOT NULL DEFAULT ''",
+        "mime_type": "ALTER TABLE clipboard_items ADD COLUMN mime_type TEXT",
+        "payload_json": "ALTER TABLE clipboard_items ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}'",
+        "secret_warning": "ALTER TABLE clipboard_items ADD COLUMN secret_warning INTEGER NOT NULL DEFAULT 0",
+        "expires_at": "ALTER TABLE clipboard_items ADD COLUMN expires_at TEXT",
+    }
+    for column, sql in additions.items():
+        if column not in existing:
+            conn.execute(sql)
+    conn.execute("UPDATE clipboard_items SET content_hash = lower(hex(randomblob(16))) WHERE content_hash = ''")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_clipboard_items_filters ON clipboard_items(source_app, source_window, folder, kind, pinned, deleted, created_at)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_clipboard_items_hash ON clipboard_items(content_hash)")
+    conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (14)")
+
+
 MIGRATIONS: dict[int, Migration] = {
     2: _migration_2,
     3: _migration_3,
@@ -424,6 +442,7 @@ MIGRATIONS: dict[int, Migration] = {
     11: _migration_11,
     12: _migration_12,
     13: _migration_13,
+    14: _migration_14,
 }
 
 
