@@ -5,12 +5,15 @@ import { ChatView } from './components/chat/ChatView';
 import { Composer } from './components/chat/Composer';
 import { SourceFilter } from './components/chat/SourceFilter';
 import { PromptsPanel } from './components/prompts/PromptsPanel';
+import { ClipboardWorkspace } from './components/ClipboardWorkspace';
 import './styles.css';
 
 const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
 const OP_FAMILY_KEY = 'topOfMind.operationFamily';
 const API_SHELF_KEY = 'topOfMind.apiShelf.v1';
 const CUSTOM_AGENTS_KEY = 'topOfMind.customAgents.v1';
+const COMMAND_FAVORITES_KEY = 'topOfMind.commandFavorites.v1';
+const COMMAND_RECENTS_KEY = 'topOfMind.commandRecents.v1';
 
 // ---- fallback data ----
 const fallbackSources = [
@@ -238,7 +241,7 @@ function ApiSettings({ online, setOnline, notice }) {
 // ---- Sidebar (unchanged) ----
 
 function Sidebar({ folders, selectedFolder, setSelectedFolder, createFolder, active, setActive }) {
-  const sections = ['chats','apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
+  const sections = ['chats','clipboard','apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
   const [collapsed, setCollapsed] = useState({});
   const [folderMeta, setFolderMeta] = useState(() => { try { return JSON.parse(localStorage.getItem('topOfMind.folderMeta.v1') || '{}'); } catch { return {}; } });
   const [systemOpen, setSystemOpen] = useState(false);
@@ -450,6 +453,41 @@ function SearchPanel({ title, modeToggle, onSearch }) {
 // ============================================================
 // MAIN APP
 // ============================================================
+function CommandPalette({ open, onClose, setActive, setInput, sources, folders, setNotice }) {
+  const [query, setQuery] = useState('');
+  const [cursor, setCursor] = useState(0);
+  const [favorites, setFavorites] = useState(() => { try { return JSON.parse(localStorage.getItem(COMMAND_FAVORITES_KEY) || '[]'); } catch { return []; } });
+  const [recents, setRecents] = useState(() => { try { return JSON.parse(localStorage.getItem(COMMAND_RECENTS_KEY) || '[]'); } catch { return []; } });
+  const actions = useMemo(() => {
+    const staticActions = [
+      { id: 'nav.chats', title: 'Open chats', description: 'Go to the message relay and composer.', category: 'Navigation', permissions: ['read:messages'], handler: () => setActive('chats') },
+      { id: 'nav.clipboard', title: 'Open clipboard workspace', description: 'Search, merge, pin, restore, export, and send clipboard records.', category: 'Navigation', permissions: ['read:clipboard'], handler: () => setActive('clipboard') },
+      { id: 'nav.prompts', title: 'Open prompts', description: 'Browse prompt library and slash prompt source.', category: 'Navigation', permissions: ['read:prompts'], handler: () => setActive('prompts') },
+      { id: 'nav.apis', title: 'Open API registry', description: 'Browse API cards and imported integrations.', category: 'Navigation', permissions: ['read:apis'], handler: () => setActive('apis') },
+      { id: 'nav.files', title: 'Open files', description: 'Search the file cache.', category: 'Navigation', permissions: ['read:files'], handler: () => setActive('files') },
+      { id: 'nav.memory', title: 'Open memory', description: 'Search durable memory.', category: 'Navigation', permissions: ['read:memory'], handler: () => setActive('memory') },
+      { id: 'nav.operator', title: 'Open operator', description: 'Review-gated file and command drafts.', category: 'Navigation', permissions: ['review:mutations'], handler: () => setActive('operator') },
+      { id: 'cmd.api-intake', title: 'Run /api filesystem intake', description: 'Prepare an intake command in the composer.', category: 'Command', parameters: ['source_folder'], permissions: ['create:job'], handler: () => { setActive('chats'); setInput('/api filesystem intake '); } },
+      { id: 'cmd.api-neardup', title: 'Run /api filesystem neardup', description: 'Prepare duplicate scan command.', category: 'Command', permissions: ['create:job'], handler: () => { setActive('chats'); setInput('/api filesystem neardup'); } },
+      { id: 'settings.api', title: 'API base URL settings', description: 'Configure local FastAPI endpoint.', category: 'Settings', permissions: ['configure:client'], handler: () => setActive('settings') },
+    ];
+    const sourceActions = (sources || []).map((source) => ({ id: `agent.${srcId(source)}`, title: `Chat with ${srcName(source)}`, description: 'Select this agent/source for the composer.', category: 'Agents', permissions: ['send:agent'], handler: () => { setActive('chats'); setNotice?.(`Select ${srcName(source)} from the funnel to make it active.`); } }));
+    const folderActions = (folders || []).map((folder) => ({ id: `folder.${folder.id || folder.name}`, title: `Open folder ${folder.name}`, description: 'Folder result from the current workspace tree.', category: 'Folders', permissions: ['read:folders'], handler: () => setNotice?.(`Folder action available: ${folder.name}`) }));
+    return [...staticActions, ...sourceActions, ...folderActions];
+  }, [sources, folders, setActive, setInput, setNotice]);
+  const matches = useMemo(() => {
+    const hay = (action) => [action.title, action.description, action.category, ...(action.parameters || []), ...(action.permissions || [])].join(' ').toLowerCase();
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const ranked = actions.filter((action) => terms.every((term) => hay(action).includes(term)));
+    return ranked.sort((a, b) => favorites.includes(b.id) - favorites.includes(a.id) || recents.indexOf(a.id) - recents.indexOf(b.id));
+  }, [actions, query, favorites, recents]);
+  useEffect(() => { if (!open) return; const onKey = (event) => { if (event.key === 'Escape') onClose(); if (event.key === 'ArrowDown') { event.preventDefault(); setCursor((value) => Math.min(value + 1, matches.length - 1)); } if (event.key === 'ArrowUp') { event.preventDefault(); setCursor((value) => Math.max(value - 1, 0)); } if (event.key === 'Enter' && matches[cursor]) { event.preventDefault(); run(matches[cursor]); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, [open, matches, cursor]);
+  const persistFavorites = (next) => { setFavorites(next); localStorage.setItem(COMMAND_FAVORITES_KEY, JSON.stringify(next)); };
+  const run = (action) => { action.handler(); const next = [action.id, ...recents.filter((id) => id !== action.id)].slice(0, 10); setRecents(next); localStorage.setItem(COMMAND_RECENTS_KEY, JSON.stringify(next)); onClose(); };
+  if (!open) return null;
+  return <div className="command-backdrop" role="dialog" aria-modal="true"><div className="command-palette"><input autoFocus value={query} onChange={(e) => { setQuery(e.target.value); setCursor(0); }} placeholder="Search chats, files, folders, clipboard, prompts, APIs, agents, models, plugins, workflows, settings…" /> <div className="command-list">{matches.map((action, index) => <div key={action.id} className={`command-row ${index === cursor ? 'active' : ''}`} onMouseEnter={() => setCursor(index)} onClick={() => run(action)}><button onClick={(e) => { e.stopPropagation(); persistFavorites(favorites.includes(action.id) ? favorites.filter((id) => id !== action.id) : [...favorites, action.id]); }}>{favorites.includes(action.id) ? '★' : '☆'}</button><div><b>{action.title}</b><p>{action.description}</p><small>{action.category} · permissions: {(action.permissions || []).join(', ') || 'none'} · params: {(action.parameters || []).join(', ') || 'none'}</small></div></div>)}</div>{!matches.length && <div className="tm-empty">No command matches.</div>}</div></div>;
+}
+
 function App() {
   const [sources, setSources] = useState(fallbackSources);
   const [folders, setFolders] = useState(starterFolders);
@@ -463,8 +501,11 @@ function App() {
   const [funnelCollapsed, setFunnelCollapsed] = useState(false);
   const [activeAgentId, setActiveAgentIdState] = useState(()=>localStorage.getItem(ACTIVE_AGENT_KEY) || 'kimi');
   const [chatFilter, setChatFilter] = useState(null);
+  const [commandOpen, setCommandOpen] = useState(false);
 
   const setActiveAgentId = (id) => { setActiveAgentIdState(id); localStorage.setItem(ACTIVE_AGENT_KEY, id); };
+
+  useEffect(() => { const onKey = (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setCommandOpen(true); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
 
   // Load messages on mount + polling
   useEffect(()=>{
@@ -570,7 +611,7 @@ function App() {
       {/* Left rail */}
       <nav className="rail">
         <b>ToM</b>
-        {['chats','apis','prompts','memory','files','operator','settings'].map(x => (
+        {['chats','clipboard','apis','prompts','memory','files','operator','settings'].map(x => (
           <button className={active===x?'on':''} onClick={()=>setActive(x)} key={x}>
             {x[0].toUpperCase()}
           </button>
@@ -660,6 +701,7 @@ function App() {
           )}
 
           {/* Other views (unchanged) */}
+          {active === 'clipboard' && <ClipboardWorkspace onSendToComposer={copyPromptToComposer} setNotice={setNotice} />}
           {active === 'apis' && <ApiShelfPanel setNotice={setNotice} />}
           {active === 'memory' && <SearchPanel title="Memory search" modeToggle onSearch={(q,m)=>topOfMindApi.searchMemory(q,m==='vector'?'vector':undefined)} />}
           {active === 'files' && <SearchPanel title="File cache search" onSearch={(q)=>topOfMindApi.searchFileCache(q)} />}
@@ -677,6 +719,8 @@ function App() {
 
       {/* Operator surface */}
       <OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice} setSources={setSources} />
+
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} setActive={setActive} setInput={setInput} sources={sources} folders={folders} setNotice={setNotice} />
 
       {/* Notice toast */}
       {notice && (
