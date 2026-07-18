@@ -6,6 +6,7 @@ import { Composer } from './components/chat/Composer';
 import { SourceFilter } from './components/chat/SourceFilter';
 import { PromptsPanel } from './components/prompts/PromptsPanel';
 import { ClipboardWorkspace } from './components/ClipboardWorkspace';
+import { ConversationOSPanel } from './components/ConversationOSPanel';
 import './styles.css';
 
 const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
@@ -652,7 +653,7 @@ function App() {
         <section className="workspace">
           {/* Chats view */}
           {active === 'chats' && (
-            <div className="chats-layout">
+            <div className="chats-layout conversation-layout">
               {/* Source filter rail */}
               <SourceFilter
                 sources={sources}
@@ -692,6 +693,7 @@ function App() {
                   />
                 </footer>
               </div>
+              <ConversationOSPanel sources={sources} messages={messages} onCopyToComposer={copyPromptToComposer} setNotice={setNotice} />
             </div>
           )}
 

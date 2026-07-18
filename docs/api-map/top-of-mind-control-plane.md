@@ -11,3 +11,4 @@
 - `/agents/*`: agent routing bridge.
 - `/api-actions/*`: existing API action registry hooks to preserve while moving API shelf data backend-side.
 - `/semantic/*`, `/prediction/*`, `/intelligence/*`, `/fis/*`: later unified search and intelligence sources.
+- `/conversation-os/*`: durable conversation state, agent arrivals, memberships/invitations, context grants, branches, response proposals, decisions, and re-entry packets.

@@ -68,3 +68,19 @@ Deferred implementation. Plan: build from existing `jobs`, `job_events`, `review
 
 ### Priority 5 — mutation ledger and undo
 Deferred implementation. Plan: extend existing `ledger_entries` schema with actor/source/reason/model/approval/reversible/undo fields and wire write/move/delete/command/API mutation routes through ledger helpers while keeping destructive actions review-gated.
+
+## Conversation operating-system slice
+
+Implemented after the clipboard foundation:
+
+- Added a durable conversation OS model for `Conversation`, `ConversationBranch`, `ConversationState`, `AgentMembership`, `AgentArrival`, `ContextGrant`, `ResponseProposal`, `ReentryPacket`, and `Decision`.
+- Invitations are explicit contracts with separate `context_scope`, `response_mode`, and permission flags. The default remains limited: recent context, silent advisory, no prior-history access, no visible speaking, no agent self-invitation, no file/command mutation, and approval required.
+- Arrival events have lifecycle states so a new AI contribution can be previewed, invited, asked silently, branched, deferred, dismissed, or archived without interrupting the current conversation.
+- Branches retain parent conversation provenance, branch point, participants, snapshot/shared-state mode, and manual merge-back policy.
+- Re-entry packets are tiered by inactivity duration and use the saved conversation state to avoid re-sending the same full prompt every turn.
+
+Deferred follow-up:
+
+- Wire real remote agent responses into `agent_arrivals` instead of using the UI simulation helper.
+- Add conductor-side duplicate suppression and contradiction flagging for `response_proposals`.
+- Add persisted trigger rules and suppression windows for first-message-of-day, post-reboot, post-merge, contradiction-found, and project/file-change re-entry events.
