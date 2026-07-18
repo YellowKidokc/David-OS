@@ -36,7 +36,7 @@ export const topOfMindApi = {
   setBaseUrl: setApiBaseUrl,
   requestRaw: request,
   test: () => request('/top-of-mind/sources'),
-  getCapabilities: () => request('/capabilities'),
+  getCapabilities: () => request('/nodes/capabilities'),
   getSources: () => request('/top-of-mind/sources'),
   createSource: (source) => request('/top-of-mind/sources', { method: 'POST', body: JSON.stringify(source) }),
   getMessages: (limit = 75) => request(`/top-of-mind/messages?${qs({ limit })}`),
