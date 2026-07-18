@@ -50,6 +50,7 @@ export function Composer({
   const [showSlash, setShowSlash] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
   const [showPrompts, setShowPrompts] = useState(false);
+  const [showPlus, setShowPlus] = useState(false);
   const textareaRef = useRef(null);
 
   const normalizedSlashQuery = slashQuery.toLowerCase().replace(/^\//, '');
@@ -70,6 +71,7 @@ export function Composer({
       if (e.key === 'Escape') {
         setShowSlash(false);
         setShowPrompts(false);
+        setShowPlus(false);
         return;
       }
 
@@ -113,6 +115,20 @@ export function Composer({
   const insertPrompt = (text) => {
     setInput((current) => (current ? current + '\n\n' + text : text));
     setShowPrompts(false);
+    textareaRef.current?.focus();
+  };
+
+  const plusActions = [
+    { label: 'Upload file', desc: 'Attach a document, image, audio, or source file', action: onAttach },
+    { label: 'New folder', desc: 'Create a workspace folder or nested subfolder', action: () => setInput((current) => current ? current : '[New folder] ') },
+    { label: 'Clipboard', desc: 'Save or paste a clipboard item into this chat', action: () => setInput((current) => current ? current + '\n\n[Clipboard] ' : '[Clipboard] ') },
+    { label: 'Markdown note', desc: 'Start a markdown message block', action: () => setInput((current) => current ? current + '\n\n```md\n\n```' : '```md\n\n```') },
+    { label: 'Prompt library', desc: 'Open quick prompt chips and slash commands', action: () => { setShowPrompts(true); setShowSlash(true); } },
+  ];
+
+  const runPlusAction = (action) => {
+    action?.();
+    setShowPlus(false);
     textareaRef.current?.focus();
   };
 
@@ -187,8 +203,27 @@ export function Composer({
         </div>
       )}
 
+      {showPlus && (
+        <div className="plus-menu">
+          {plusActions.map((item) => (
+            <button key={item.label} onClick={() => runPlusAction(item.action)}>
+              <b>{item.label}</b>
+              <span>{item.desc}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Main input row */}
       <div className="composer-main">
+        <button
+          className="composer-plus"
+          onClick={() => setShowPlus(!showPlus)}
+          title="Open everything menu"
+        >
+          ＋
+        </button>
+
         <button
           className={`composer-mic ${micOn ? 'mic-on' : ''}`}
           onClick={toggleMic}

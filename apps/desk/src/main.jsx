@@ -5,11 +5,17 @@ import { ChatView } from './components/chat/ChatView';
 import { Composer } from './components/chat/Composer';
 import { SourceFilter } from './components/chat/SourceFilter';
 import { PromptsPanel } from './components/prompts/PromptsPanel';
+import { ClipboardWorkspace } from './components/ClipboardWorkspace';
+import { ConversationOSPanel } from './components/ConversationOSPanel';
+import { ObjectRegistryPage } from './components/ObjectRegistryPage';
 import './styles.css';
 
 const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
 const OP_FAMILY_KEY = 'topOfMind.operationFamily';
 const API_SHELF_KEY = 'topOfMind.apiShelf.v1';
+const CUSTOM_AGENTS_KEY = 'topOfMind.customAgents.v1';
+const COMMAND_FAVORITES_KEY = 'topOfMind.commandFavorites.v1';
+const COMMAND_RECENTS_KEY = 'topOfMind.commandRecents.v1';
 
 // ---- fallback data ----
 const fallbackSources = [
@@ -32,6 +38,19 @@ const initials = (s) => (s?.name || s?.label || s?.id || s?.source_id || '?').sp
 const srcName = (s) => s?.name || s?.label || s?.source_id || s?.id || 'source';
 const srcId = (s) => s?.id || s?.source_id || s?.name || s?.label;
 const arr = (d, key) => Array.isArray(d) ? d : d?.[key] || [];
+const globalNavItems = [
+  { id: 'chats', icon: '●', label: 'Chats' },
+  { id: 'agents', icon: '♙', label: 'Agents' },
+  { id: 'prompts', icon: '▣', label: 'Prompts' },
+  { id: 'plugins', icon: '▦', label: 'Plugins' },
+  { id: 'models', icon: '⚙', label: 'Models' },
+  { id: 'clipboard', icon: '⧉', label: 'Clipboard' },
+  { id: 'apis', icon: '⌁', label: 'APIs' },
+  { id: 'memory', icon: '◇', label: 'KB' },
+  { id: 'workflows', icon: '⟲', label: 'Workflows' },
+  { id: 'operator', icon: '⌨', label: 'Ops' },
+  { id: 'settings', icon: '☷', label: 'Settings' },
+];
 
 // ---- API Registry ----
 const API_REGISTRY_KEY = 'topOfMind.apiRegistry.v1';
@@ -235,10 +254,59 @@ function ApiSettings({ online, setOnline, notice }) {
 }
 
 // ---- Sidebar (unchanged) ----
+
 function Sidebar({ folders, selectedFolder, setSelectedFolder, createFolder, active, setActive }) {
-  const sections = ['chats','apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
-  const renderFolder = (f, depth = 0) => <div key={f.id || f.folder_id || f.folder_code}><button className="row" style={{'--depth': depth}} onClick={()=>setSelectedFolder(f)}>{depth ? '└' : '▾'} 📁 {f.name || f.title} <small>{f.folder_code}</small></button>{(f.children || []).map((c)=>renderFolder(c, depth + 1))}<button className="chat" style={{'--depth': depth + 1}}>💬 Current routing chat</button></div>;
-  return <aside className="sidebar"><button className="new">＋ New Chat</button><input className="search" placeholder="Search Chats"/><h3>Folders</h3>{folders.map((f)=>renderFolder(f))}<button className="row" onClick={createFolder}>＋ Create folder via API</button>{sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>◇ {s}</button>)}</aside>;
+  const sections = globalNavItems.map((item) => item.id);
+  const [collapsed, setCollapsed] = useState({});
+  const [folderMeta, setFolderMeta] = useState(() => { try { return JSON.parse(localStorage.getItem('topOfMind.folderMeta.v1') || '{}'); } catch { return {}; } });
+  const [systemOpen, setSystemOpen] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState(() => localStorage.getItem('topOfMind.systemPrompt') || 'You are David OS: concise, structured, and action oriented.');
+  const [searchVars, setSearchVars] = useState({ date: new Date().toISOString().slice(0, 10), time: 'now', size: 'balanced', mode: 'semantic' });
+  const workspaceItems = ['Markdown note', 'Clipboard capture', 'Prompt snippet', 'Chat thread'];
+  const saveSystemPrompt = () => { localStorage.setItem('topOfMind.systemPrompt', systemPrompt); setSystemOpen(false); };
+  const persistFolderMeta = (next) => { setFolderMeta(next); localStorage.setItem('topOfMind.folderMeta.v1', JSON.stringify(next)); };
+  const toggleFolder = (id) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
+  const toggleFolderStar = (id) => persistFolderMeta({ ...folderMeta, [id]: { ...(folderMeta[id] || {}), starred: !folderMeta[id]?.starred } });
+  const editFolderTags = (id) => { const tags = prompt('Folder tags, comma separated', (folderMeta[id]?.tags || []).join(', ')); if (tags === null) return; persistFolderMeta({ ...folderMeta, [id]: { ...(folderMeta[id] || {}), tags: tags.split(',').map((tag)=>tag.trim()).filter(Boolean) } }); };
+  const renderFolder = (f, depth = 0) => {
+    const id = f.id || f.folder_id || f.folder_code || f.name;
+    const children = f.children || [];
+    const isCollapsed = collapsed[id];
+    const selected = selectedFolder && (selectedFolder.id || selectedFolder.folder_id || selectedFolder.folder_code || selectedFolder.name) === id;
+    const meta = folderMeta[id] || {};
+    return <div key={id} className="folder-node">
+      <div className={`folder-row ${selected ? 'selected' : ''}`} style={{'--depth': depth}}>
+        <button className="folder-caret" onClick={()=>toggleFolder(id)} aria-label={isCollapsed ? 'Expand folder' : 'Collapse folder'}>{children.length ? (isCollapsed ? '▸' : '▾') : '·'}</button>
+        <button className="folder-name" onClick={()=>setSelectedFolder(f)}>📁 <span>{f.name || f.title}</span> <small>{f.folder_code || children.length}</small></button>
+        <button className={`folder-star ${meta.starred ? 'starred' : ''}`} onClick={()=>toggleFolderStar(id)} title={meta.starred ? 'Unstar folder' : 'Star folder'}>{meta.starred ? '★' : '☆'}</button>
+        <button className="folder-tags" onClick={()=>editFolderTags(id)} title="Edit folder tags">#</button>
+        <button className="folder-plus" onClick={createFolder} title="Add nested folder or item">＋</button>
+      </div>
+      {meta.tags?.length > 0 && <div className="folder-tag-list" style={{'--depth': depth + 1}}>{meta.tags.map((tag)=><span key={tag}>#{tag}</span>)}</div>}
+      {!isCollapsed && <div>
+        {children.map((c)=>renderFolder(c, depth + 1))}
+        {depth < 2 && workspaceItems.slice(0, depth === 0 ? 2 : 1).map((item)=><button key={`${id}-${item}`} className="chat asset-item" style={{'--depth': depth + 1}}>▣ {item}</button>)}
+      </div>}
+    </div>;
+  };
+  return <aside className="sidebar">
+    <div className="sidebar-top">
+      <button className="new">＋ New Chat</button>
+      <button className="system-prompt-button" onClick={()=>setSystemOpen(true)} title="Open system prompt">☉</button>
+    </div>
+    <input className="search" placeholder="Search chats, folders, markdown, clipboards"/>
+    <div className="search-vars" aria-label="Search variables">
+      <label>Date<input type="date" value={searchVars.date} onChange={(e)=>setSearchVars({...searchVars, date:e.target.value})}/></label>
+      <label>Time<select value={searchVars.time} onChange={(e)=>setSearchVars({...searchVars, time:e.target.value})}><option>now</option><option>today</option><option>week</option><option>custom</option></select></label>
+      <label>Size<select value={searchVars.size} onChange={(e)=>setSearchVars({...searchVars, size:e.target.value})}><option>balanced</option><option>small</option><option>large</option></select></label>
+      <label>Mode<select value={searchVars.mode} onChange={(e)=>setSearchVars({...searchVars, mode:e.target.value})}><option>semantic</option><option>exact</option><option>recent</option></select></label>
+    </div>
+    <div className="folder-heading"><h3>Folders</h3><button onClick={createFolder}>＋ Folder</button></div>
+    {folders.map((f)=>renderFolder(f))}
+    <h3>Navigation</h3>
+    {sections.map((s)=><button key={s} onClick={()=>setActive(s)} className={`row ${active===s?'selected':''}`}>◇ {s}</button>)}
+    {systemOpen && <div className="modal-backdrop" onClick={()=>setSystemOpen(false)}><section className="system-modal" onClick={(e)=>e.stopPropagation()}><h2>System Prompt</h2><p>Tune the outside instruction layer before you chat or launch prompts.</p><textarea value={systemPrompt} onChange={(e)=>setSystemPrompt(e.target.value)}/><div><button onClick={()=>setSystemOpen(false)}>Cancel</button><button className="tm-primary" onClick={saveSystemPrompt}>Save prompt</button></div></section></div>}
+  </aside>;
 }
 
 // ---- Funnel (source control) ----
@@ -261,17 +329,38 @@ const operationFamilies = [
   { id: 'hub', label: 'Hub', icon: '◆', group: 'API Calls' },
 ];
 
-function OperatorSurface({ selectedSource, input, setNotice }) {
+function OperatorSurface({ selectedSource, input, setNotice, setSources }) {
   const [family, setFamilyState] = useState(()=>localStorage.getItem(OP_FAMILY_KEY) || 'hub');
   const [folded, setFolded] = useState(false);
   const [capabilities, setCapabilities] = useState([]);
   const [ahkOnline, setAhkOnline] = useState(false);
   const [profile, setProfile] = useState('TopMind');
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderTab, setBuilderTab] = useState('agent');
+  const [agentDraft, setAgentDraft] = useState({ name: '', role: 'Research assistant', model: 'Claude Opus 4.6', tags: 'custom' });
+  const [apiDraft, setApiDraft] = useState({ name: '', endpoint: '', tags: 'custom' });
   const agent = { id: srcId(selectedSource), name: srcName(selectedSource), source_code: selectedSource?.source_code };
   const selectedFamily = operationFamilies.find((f)=>f.id===family) || operationFamilies[0];
   const setFamily = (id) => { setFamilyState(id); localStorage.setItem(OP_FAMILY_KEY, id); setFolded(false); };
   const status = (name, text) => setNotice(`${name}: ${text}`);
   const bridgeJob = (action, payload = {}) => topOfMindApi.createBridgeJob({ worker: 'ahk-main', action, target: agent, payload, source: 'operator-surface' });
+  const createCustomAgent = () => {
+    const name = agentDraft.name.trim() || agentDraft.role;
+    const customAgent = { id: `custom-agent-${Date.now()}`, name, label: name, source_id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), status: 'online', configured: true, template: agentDraft.role, model: agentDraft.model, tags: agentDraft.tags.split(',').map((tag)=>tag.trim()).filter(Boolean) };
+    const saved = [...(JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]')), customAgent];
+    localStorage.setItem(CUSTOM_AGENTS_KEY, JSON.stringify(saved));
+    setSources((items)=>[...items, customAgent]);
+    setNotice(`Created custom agent: ${name}`);
+    setBuilderOpen(false);
+  };
+  const createCustomApi = () => {
+    const name = apiDraft.name.trim() || apiDraft.endpoint.trim() || 'Custom API';
+    const customApi = { id: `custom-${Date.now()}`, name, categoryId: 'custom', category: 'Imported', status: 'needs_key', endpoint: apiDraft.endpoint.trim() || 'External', desc: `Custom API · tags: ${apiDraft.tags}`, icon: '+', docs: apiDraft.endpoint.trim(), params: [] };
+    const saved = loadCustomApis();
+    localStorage.setItem(API_REGISTRY_KEY, JSON.stringify([...saved, customApi]));
+    setNotice(`Added custom API: ${name}`);
+    setBuilderOpen(false);
+  };
   async function safeCall(name, fn, options = {}) {
     if (options.confirm && !window.confirm(options.confirm)) { status(name, 'cancelled'); return; }
     try { const result = await fn(); status(name, result?.status || result?.message || 'hub request accepted'); }
@@ -333,6 +422,24 @@ function OperatorSurface({ selectedSource, input, setNotice }) {
       {operationFamilies.map((item)=><button key={item.id} className={family===item.id?'active':''} onClick={()=>setFamily(item.id)} aria-label={item.label} title={item.label}>{item.icon}</button>)}
     </nav>
     {!folded && <section className="ops-panel">
+      <div className="builder-card">
+        <button className="builder-plus" onClick={()=>setBuilderOpen(!builderOpen)}>＋ Add agent / API</button>
+        {builderOpen && <div className="builder-form">
+          <div className="builder-tabs"><button className={builderTab==='agent'?'active':''} onClick={()=>setBuilderTab('agent')}>Agent template</button><button className={builderTab==='api'?'active':''} onClick={()=>setBuilderTab('api')}>API card</button></div>
+          {builderTab === 'agent' ? <div className="builder-fields">
+            <input value={agentDraft.name} onChange={(e)=>setAgentDraft({...agentDraft, name:e.target.value})} placeholder="Agent name"/>
+            <select value={agentDraft.role} onChange={(e)=>setAgentDraft({...agentDraft, role:e.target.value})}><option>Research assistant</option><option>Life coach</option><option>Code partner</option><option>Day trading analyst</option><option>Workbook builder</option></select>
+            <input value={agentDraft.model} onChange={(e)=>setAgentDraft({...agentDraft, model:e.target.value})} placeholder="Default model"/>
+            <input value={agentDraft.tags} onChange={(e)=>setAgentDraft({...agentDraft, tags:e.target.value})} placeholder="tags"/>
+            <button className="tm-primary" onClick={createCustomAgent}>Create agent</button>
+          </div> : <div className="builder-fields">
+            <input value={apiDraft.name} onChange={(e)=>setApiDraft({...apiDraft, name:e.target.value})} placeholder="API name"/>
+            <input value={apiDraft.endpoint} onChange={(e)=>setApiDraft({...apiDraft, endpoint:e.target.value})} placeholder="https://... or POST /route"/>
+            <input value={apiDraft.tags} onChange={(e)=>setApiDraft({...apiDraft, tags:e.target.value})} placeholder="tags"/>
+            <button className="tm-primary" onClick={createCustomApi}>Add API</button>
+          </div>}
+        </div>}
+      </div>
       <div className="ahk-layer" aria-label="Persistent AutoHotkey layer">
         <div><b>AHK</b><span className={`dot ${ahkOnline?'ok':'bad'}`}></span></div>
         <small>{ahkOnline?'online':'offline'} · {profile}</small>
@@ -361,6 +468,41 @@ function SearchPanel({ title, modeToggle, onSearch }) {
 // ============================================================
 // MAIN APP
 // ============================================================
+function CommandPalette({ open, onClose, setActive, setInput, sources, folders, setNotice }) {
+  const [query, setQuery] = useState('');
+  const [cursor, setCursor] = useState(0);
+  const [favorites, setFavorites] = useState(() => { try { return JSON.parse(localStorage.getItem(COMMAND_FAVORITES_KEY) || '[]'); } catch { return []; } });
+  const [recents, setRecents] = useState(() => { try { return JSON.parse(localStorage.getItem(COMMAND_RECENTS_KEY) || '[]'); } catch { return []; } });
+  const actions = useMemo(() => {
+    const staticActions = [
+      { id: 'nav.chats', title: 'Open chats', description: 'Go to the message relay and composer.', category: 'Navigation', permissions: ['read:messages'], handler: () => setActive('chats') },
+      { id: 'nav.clipboard', title: 'Open clipboard workspace', description: 'Search, merge, pin, restore, export, and send clipboard records.', category: 'Navigation', permissions: ['read:clipboard'], handler: () => setActive('clipboard') },
+      { id: 'nav.prompts', title: 'Open prompts', description: 'Browse prompt library and slash prompt source.', category: 'Navigation', permissions: ['read:prompts'], handler: () => setActive('prompts') },
+      { id: 'nav.apis', title: 'Open API registry', description: 'Browse API cards and imported integrations.', category: 'Navigation', permissions: ['read:apis'], handler: () => setActive('apis') },
+      { id: 'nav.files', title: 'Open files', description: 'Search the file cache.', category: 'Navigation', permissions: ['read:files'], handler: () => setActive('files') },
+      { id: 'nav.memory', title: 'Open memory', description: 'Search durable memory.', category: 'Navigation', permissions: ['read:memory'], handler: () => setActive('memory') },
+      { id: 'nav.operator', title: 'Open operator', description: 'Review-gated file and command drafts.', category: 'Navigation', permissions: ['review:mutations'], handler: () => setActive('operator') },
+      { id: 'cmd.api-intake', title: 'Run /api filesystem intake', description: 'Prepare an intake command in the composer.', category: 'Command', parameters: ['source_folder'], permissions: ['create:job'], handler: () => { setActive('chats'); setInput('/api filesystem intake '); } },
+      { id: 'cmd.api-neardup', title: 'Run /api filesystem neardup', description: 'Prepare duplicate scan command.', category: 'Command', permissions: ['create:job'], handler: () => { setActive('chats'); setInput('/api filesystem neardup'); } },
+      { id: 'settings.api', title: 'API base URL settings', description: 'Configure local FastAPI endpoint.', category: 'Settings', permissions: ['configure:client'], handler: () => setActive('settings') },
+    ];
+    const sourceActions = (sources || []).map((source) => ({ id: `agent.${srcId(source)}`, title: `Chat with ${srcName(source)}`, description: 'Select this agent/source for the composer.', category: 'Agents', permissions: ['send:agent'], handler: () => { setActive('chats'); setNotice?.(`Select ${srcName(source)} from the funnel to make it active.`); } }));
+    const folderActions = (folders || []).map((folder) => ({ id: `folder.${folder.id || folder.name}`, title: `Open folder ${folder.name}`, description: 'Folder result from the current workspace tree.', category: 'Folders', permissions: ['read:folders'], handler: () => setNotice?.(`Folder action available: ${folder.name}`) }));
+    return [...staticActions, ...sourceActions, ...folderActions];
+  }, [sources, folders, setActive, setInput, setNotice]);
+  const matches = useMemo(() => {
+    const hay = (action) => [action.title, action.description, action.category, ...(action.parameters || []), ...(action.permissions || [])].join(' ').toLowerCase();
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const ranked = actions.filter((action) => terms.every((term) => hay(action).includes(term)));
+    return ranked.sort((a, b) => favorites.includes(b.id) - favorites.includes(a.id) || recents.indexOf(a.id) - recents.indexOf(b.id));
+  }, [actions, query, favorites, recents]);
+  useEffect(() => { if (!open) return; const onKey = (event) => { if (event.key === 'Escape') onClose(); if (event.key === 'ArrowDown') { event.preventDefault(); setCursor((value) => Math.min(value + 1, matches.length - 1)); } if (event.key === 'ArrowUp') { event.preventDefault(); setCursor((value) => Math.max(value - 1, 0)); } if (event.key === 'Enter' && matches[cursor]) { event.preventDefault(); run(matches[cursor]); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, [open, matches, cursor]);
+  const persistFavorites = (next) => { setFavorites(next); localStorage.setItem(COMMAND_FAVORITES_KEY, JSON.stringify(next)); };
+  const run = (action) => { action.handler(); const next = [action.id, ...recents.filter((id) => id !== action.id)].slice(0, 10); setRecents(next); localStorage.setItem(COMMAND_RECENTS_KEY, JSON.stringify(next)); onClose(); };
+  if (!open) return null;
+  return <div className="command-backdrop" role="dialog" aria-modal="true"><div className="command-palette"><input autoFocus value={query} onChange={(e) => { setQuery(e.target.value); setCursor(0); }} placeholder="Search chats, files, folders, clipboard, prompts, APIs, agents, models, plugins, workflows, settings…" /> <div className="command-list">{matches.map((action, index) => <div key={action.id} className={`command-row ${index === cursor ? 'active' : ''}`} onMouseEnter={() => setCursor(index)} onClick={() => run(action)}><button onClick={(e) => { e.stopPropagation(); persistFavorites(favorites.includes(action.id) ? favorites.filter((id) => id !== action.id) : [...favorites, action.id]); }}>{favorites.includes(action.id) ? '★' : '☆'}</button><div><b>{action.title}</b><p>{action.description}</p><small>{action.category} · permissions: {(action.permissions || []).join(', ') || 'none'} · params: {(action.parameters || []).join(', ') || 'none'}</small></div></div>)}</div>{!matches.length && <div className="tm-empty">No command matches.</div>}</div></div>;
+}
+
 function App() {
   const [sources, setSources] = useState(fallbackSources);
   const [folders, setFolders] = useState(starterFolders);
@@ -374,12 +516,15 @@ function App() {
   const [funnelCollapsed, setFunnelCollapsed] = useState(false);
   const [activeAgentId, setActiveAgentIdState] = useState(()=>localStorage.getItem(ACTIVE_AGENT_KEY) || 'kimi');
   const [chatFilter, setChatFilter] = useState(null);
+  const [commandOpen, setCommandOpen] = useState(false);
 
   const setActiveAgentId = (id) => { setActiveAgentIdState(id); localStorage.setItem(ACTIVE_AGENT_KEY, id); };
 
+  useEffect(() => { const onKey = (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setCommandOpen(true); } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
+
   // Load messages on mount + polling
   useEffect(()=>{
-    topOfMindApi.getSources().then(d=>{const s=arr(d,'sources'); if(s.length) setSources(s); setOnline(true);}).catch(e=>{setOnline(false); setNotice(e.message);});
+    topOfMindApi.getSources().then(d=>{const s=arr(d,'sources'); const custom = JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]'); if(s.length || custom.length) setSources([...s, ...custom]); setOnline(true);}).catch(e=>{const custom = JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]'); if(custom.length) setSources((current)=>[...current, ...custom]); setOnline(false); setNotice(e.message);});
     topOfMindApi.getFolders().then(d=>setFolders(arr(d,'folders'))).catch(()=>{});
     const loadMessages = () => topOfMindApi.getMessages(75).then(d=>{setMessages(arr(d,'messages')); setOnline(true);}).catch(()=>setOnline(false));
     loadMessages();
@@ -479,11 +624,11 @@ function App() {
   return (
     <div className="app">
       {/* Left rail */}
-      <nav className="rail">
+      <nav className="rail global-rail" aria-label="Global navigation">
         <b>ToM</b>
-        {['chats','apis','prompts','memory','files','operator','settings'].map(x => (
-          <button className={active===x?'on':''} onClick={()=>setActive(x)} key={x}>
-            {x[0].toUpperCase()}
+        {globalNavItems.map((item) => (
+          <button className={active===item.id?'on':''} onClick={()=>setActive(item.id)} key={item.id} title={item.label}>
+            <span>{item.icon}</span><small>{item.label}</small>
           </button>
         ))}
       </nav>
@@ -522,7 +667,7 @@ function App() {
         <section className="workspace">
           {/* Chats view */}
           {active === 'chats' && (
-            <div className="chats-layout">
+            <div className="chats-layout conversation-layout">
               {/* Source filter rail */}
               <SourceFilter
                 sources={sources}
@@ -562,6 +707,7 @@ function App() {
                   />
                 </footer>
               </div>
+              <ConversationOSPanel sources={sources} messages={messages} onCopyToComposer={copyPromptToComposer} setNotice={setNotice} />
             </div>
           )}
 
@@ -571,6 +717,11 @@ function App() {
           )}
 
           {/* Other views (unchanged) */}
+          {active === 'clipboard' && <ClipboardWorkspace onSendToComposer={copyPromptToComposer} setNotice={setNotice} />}
+          {active === 'agents' && <ObjectRegistryPage kind="agents" onAction={setNotice} onCopyToComposer={copyPromptToComposer} />}
+          {active === 'models' && <ObjectRegistryPage kind="models" onAction={setNotice} onCopyToComposer={copyPromptToComposer} />}
+          {active === 'plugins' && <ObjectRegistryPage kind="plugins" onAction={setNotice} onCopyToComposer={copyPromptToComposer} />}
+          {active === 'workflows' && <ObjectRegistryPage kind="workflows" onAction={setNotice} onCopyToComposer={copyPromptToComposer} />}
           {active === 'apis' && <ApiShelfPanel setNotice={setNotice} />}
           {active === 'memory' && <SearchPanel title="Memory search" modeToggle onSearch={(q,m)=>topOfMindApi.searchMemory(q,m==='vector'?'vector':undefined)} />}
           {active === 'files' && <SearchPanel title="File cache search" onSearch={(q)=>topOfMindApi.searchFileCache(q)} />}
@@ -587,7 +738,9 @@ function App() {
       </main>
 
       {/* Operator surface */}
-      <OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice} />
+      <OperatorSurface selectedSource={selectedSource} input={input} setNotice={setNotice} setSources={setSources} />
+
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} setActive={setActive} setInput={setInput} sources={sources} folders={folders} setNotice={setNotice} />
 
       {/* Notice toast */}
       {notice && (

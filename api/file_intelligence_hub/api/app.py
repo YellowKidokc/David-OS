@@ -9,6 +9,7 @@ from file_intelligence_hub.api.routes_api_actions import router as api_actions_r
 from file_intelligence_hub.api.routes_agents import router as agents_router
 from file_intelligence_hub.api.routes_clipboard import router as clipboard_router
 from file_intelligence_hub.api.routes_commands import router as commands_router
+from file_intelligence_hub.api.routes_conversation_os import router as conversation_os_router
 from file_intelligence_hub.api.routes_file_actions import router as file_actions_router
 from file_intelligence_hub.api.routes_file_cache import router as file_cache_router
 from file_intelligence_hub.api.routes_fis import router as fis_router
@@ -30,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(agents_router)
     app.include_router(clipboard_router)
     app.include_router(commands_router)
+    app.include_router(conversation_os_router)
     app.include_router(file_actions_router)
     app.include_router(file_cache_router)
     app.include_router(fis_router)

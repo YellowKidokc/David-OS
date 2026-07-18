@@ -5,7 +5,7 @@ import sqlite3
 from pathlib import Path
 from typing import Callable
 
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 15
 
 BASE_SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -411,6 +411,150 @@ def _migration_13(conn: sqlite3.Connection) -> None:
     conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (13)")
 
 
+def _migration_14(conn: sqlite3.Connection) -> None:
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(clipboard_items)").fetchall()}
+    additions = {
+        "content_hash": "ALTER TABLE clipboard_items ADD COLUMN content_hash TEXT NOT NULL DEFAULT ''",
+        "mime_type": "ALTER TABLE clipboard_items ADD COLUMN mime_type TEXT",
+        "payload_json": "ALTER TABLE clipboard_items ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}'",
+        "secret_warning": "ALTER TABLE clipboard_items ADD COLUMN secret_warning INTEGER NOT NULL DEFAULT 0",
+        "expires_at": "ALTER TABLE clipboard_items ADD COLUMN expires_at TEXT",
+    }
+    for column, sql in additions.items():
+        if column not in existing:
+            conn.execute(sql)
+    conn.execute("UPDATE clipboard_items SET content_hash = lower(hex(randomblob(16))) WHERE content_hash = ''")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_clipboard_items_filters ON clipboard_items(source_app, source_window, folder, kind, pinned, deleted, created_at)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_clipboard_items_hash ON clipboard_items(content_hash)")
+    conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (14)")
+
+
+def _migration_15(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS conversations (
+            conversation_id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS conversation_states (
+            conversation_id TEXT PRIMARY KEY REFERENCES conversations(conversation_id),
+            active_project TEXT NOT NULL DEFAULT '',
+            current_objective TEXT NOT NULL DEFAULT '',
+            canonical_definitions_json TEXT NOT NULL DEFAULT '[]',
+            accepted_decisions_json TEXT NOT NULL DEFAULT '[]',
+            rejected_options_json TEXT NOT NULL DEFAULT '[]',
+            unresolved_questions_json TEXT NOT NULL DEFAULT '[]',
+            recent_summary TEXT NOT NULL DEFAULT '',
+            required_next_action TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS agent_arrivals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id),
+            agent_id TEXT NOT NULL,
+            message_id INTEGER REFERENCES top_messages(id),
+            topic TEXT NOT NULL,
+            contribution_type TEXT NOT NULL,
+            priority TEXT NOT NULL DEFAULT 'normal',
+            novelty REAL NOT NULL DEFAULT 0.5,
+            state TEXT NOT NULL DEFAULT 'NEW',
+            summary TEXT NOT NULL DEFAULT '',
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS agent_memberships (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id),
+            agent_id TEXT NOT NULL,
+            joined_at_message_id INTEGER REFERENCES top_messages(id),
+            context_scope TEXT NOT NULL DEFAULT 'recent_context',
+            response_mode TEXT NOT NULL DEFAULT 'silent_advisor',
+            status TEXT NOT NULL DEFAULT 'listening',
+            permissions_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(conversation_id, agent_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS conversation_branches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            branch_id TEXT UNIQUE,
+            parent_conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id),
+            branched_from_message_id INTEGER REFERENCES top_messages(id),
+            title TEXT NOT NULL,
+            participants_json TEXT NOT NULL DEFAULT '[]',
+            shared_state_mode TEXT NOT NULL DEFAULT 'snapshot',
+            merge_back_policy TEXT NOT NULL DEFAULT 'manual',
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS context_grants (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id),
+            agent_id TEXT NOT NULL,
+            scope TEXT NOT NULL,
+            sources_json TEXT NOT NULL DEFAULT '[]',
+            expires_at TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS response_proposals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id),
+            agent_id TEXT NOT NULL,
+            mode TEXT NOT NULL DEFAULT 'silent_advisor',
+            body TEXT NOT NULL,
+            state TEXT NOT NULL DEFAULT 'INTERNAL',
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS conversation_decisions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id),
+            title TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'accepted',
+            rationale TEXT NOT NULL DEFAULT '',
+            source TEXT NOT NULL DEFAULT 'user',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS reentry_packets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id),
+            agent_id TEXT NOT NULL,
+            level TEXT NOT NULL,
+            inactive_hours REAL NOT NULL,
+            template TEXT NOT NULL,
+            packet_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TRIGGER IF NOT EXISTS conversations_updated_at
+        AFTER UPDATE ON conversations
+        BEGIN
+            UPDATE conversations SET updated_at = datetime('now') WHERE conversation_id = NEW.conversation_id;
+        END;
+
+        CREATE INDEX IF NOT EXISTS idx_agent_arrivals_state ON agent_arrivals(conversation_id, state, priority, created_at);
+        CREATE INDEX IF NOT EXISTS idx_agent_memberships_conversation ON agent_memberships(conversation_id, status);
+        CREATE INDEX IF NOT EXISTS idx_conversation_branches_parent ON conversation_branches(parent_conversation_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_context_grants_agent ON context_grants(agent_id, conversation_id, scope);
+        CREATE INDEX IF NOT EXISTS idx_reentry_packets_agent ON reentry_packets(conversation_id, agent_id, created_at);
+        """
+    )
+    conn.execute("INSERT OR IGNORE INTO conversations (conversation_id, title, status, metadata_json) VALUES ('main', 'Main', 'active', '{}')")
+    conn.execute("INSERT OR IGNORE INTO schema_migrations (version) VALUES (15)")
+
+
 MIGRATIONS: dict[int, Migration] = {
     2: _migration_2,
     3: _migration_3,
@@ -424,6 +568,8 @@ MIGRATIONS: dict[int, Migration] = {
     11: _migration_11,
     12: _migration_12,
     13: _migration_13,
+    14: _migration_14,
+    15: _migration_15,
 }
 
 
