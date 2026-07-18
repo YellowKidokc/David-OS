@@ -98,6 +98,16 @@ def duplicates(include_deleted: bool = False, limit: int = 100) -> dict[str, obj
     return {"duplicates": _repo().duplicates(include_deleted=include_deleted, limit=limit)}
 
 
+@router.get("/facets")
+def facets() -> dict[str, object]:
+    return {"facets": _repo().facets()}
+
+
+@router.get("/duplicates")
+def duplicates(include_deleted: bool = False, limit: int = 100) -> dict[str, object]:
+    return {"duplicates": _repo().duplicates(include_deleted=include_deleted, limit=limit)}
+
+
 @router.patch("/items/{item_id}")
 def set_item_state(item_id: int, request: ClipboardItemStateRequest) -> dict[str, object]:
     try:
