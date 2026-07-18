@@ -85,7 +85,22 @@ def list_items(
     deleted: bool | None = None,
     limit: int = 100,
 ) -> dict[str, object]:
-    return {"items": _repo().list_items(folder=folder, pinned=pinned, query=query, source_app=source_app, source_window=source_window, tag=tag, kind=kind, date_from=date_from, date_to=date_to, include_deleted=include_deleted, deleted=deleted, limit=limit)}
+    return {
+        "items": _repo().list_items(
+            folder=folder,
+            pinned=pinned,
+            query=query,
+            source_app=source_app,
+            source_window=source_window,
+            tag=tag,
+            kind=kind,
+            date_from=date_from,
+            date_to=date_to,
+            include_deleted=include_deleted,
+            deleted=deleted,
+            limit=limit,
+        )
+    }
 
 
 @router.get("/facets")
@@ -141,9 +156,16 @@ def merge_items(request: ClipboardMergeRequest) -> dict[str, object]:
 def export_items(request: ClipboardExportRequest | None = None):
     request = request or ClipboardExportRequest()
     repo = _repo()
-    items = [repo.get_item(item_id) for item_id in request.item_ids] if request.item_ids else repo.list_items(include_deleted=request.include_deleted, limit=100000)
+    items = (
+        [repo.get_item(item_id) for item_id in request.item_ids]
+        if request.item_ids
+        else repo.list_items(include_deleted=request.include_deleted, limit=100000)
+    )
     if request.format == "markdown":
-        body = "\n\n".join(f"<!-- clipboard:{item['id']} created:{item['created_at']} -->\n\n{item['body']}" for item in items)
+        body = "\n\n".join(
+            f"<!-- clipboard:{item['id']} created:{item['created_at']} -->\n\n{item['body']}"
+            for item in items
+        )
         return Response(content=body, media_type="text/markdown")
     if request.format == "text":
         body = "\n\n---\n\n".join(item["body"] for item in items)
