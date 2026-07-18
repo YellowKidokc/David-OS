@@ -7,6 +7,7 @@ import { SourceFilter } from './components/chat/SourceFilter';
 import { PromptsPanel } from './components/prompts/PromptsPanel';
 import { ClipboardWorkspace } from './components/ClipboardWorkspace';
 import { ConversationOSPanel } from './components/ConversationOSPanel';
+import { ObjectRegistryPage } from './components/ObjectRegistryPage';
 import './styles.css';
 
 const ACTIVE_AGENT_KEY = 'topOfMind.activeAgentId';
@@ -37,6 +38,19 @@ const initials = (s) => (s?.name || s?.label || s?.id || s?.source_id || '?').sp
 const srcName = (s) => s?.name || s?.label || s?.source_id || s?.id || 'source';
 const srcId = (s) => s?.id || s?.source_id || s?.name || s?.label;
 const arr = (d, key) => Array.isArray(d) ? d : d?.[key] || [];
+const globalNavItems = [
+  { id: 'chats', icon: '●', label: 'Chats' },
+  { id: 'agents', icon: '♙', label: 'Agents' },
+  { id: 'prompts', icon: '▣', label: 'Prompts' },
+  { id: 'plugins', icon: '▦', label: 'Plugins' },
+  { id: 'models', icon: '⚙', label: 'Models' },
+  { id: 'clipboard', icon: '⧉', label: 'Clipboard' },
+  { id: 'apis', icon: '⌁', label: 'APIs' },
+  { id: 'memory', icon: '◇', label: 'KB' },
+  { id: 'workflows', icon: '⟲', label: 'Workflows' },
+  { id: 'operator', icon: '⌨', label: 'Ops' },
+  { id: 'settings', icon: '☷', label: 'Settings' },
+];
 
 // ---- API Registry ----
 const API_REGISTRY_KEY = 'topOfMind.apiRegistry.v1';
@@ -242,7 +256,7 @@ function ApiSettings({ online, setOnline, notice }) {
 // ---- Sidebar (unchanged) ----
 
 function Sidebar({ folders, selectedFolder, setSelectedFolder, createFolder, active, setActive }) {
-  const sections = ['chats','clipboard','apis','prompts','agents','models','tools/plugins','knowledge bank','settings'];
+  const sections = globalNavItems.map((item) => item.id);
   const [collapsed, setCollapsed] = useState({});
   const [folderMeta, setFolderMeta] = useState(() => { try { return JSON.parse(localStorage.getItem('topOfMind.folderMeta.v1') || '{}'); } catch { return {}; } });
   const [systemOpen, setSystemOpen] = useState(false);
@@ -610,11 +624,11 @@ function App() {
   return (
     <div className="app">
       {/* Left rail */}
-      <nav className="rail">
+      <nav className="rail global-rail" aria-label="Global navigation">
         <b>ToM</b>
-        {['chats','clipboard','apis','prompts','memory','files','operator','settings'].map(x => (
-          <button className={active===x?'on':''} onClick={()=>setActive(x)} key={x}>
-            {x[0].toUpperCase()}
+        {globalNavItems.map((item) => (
+          <button className={active===item.id?'on':''} onClick={()=>setActive(item.id)} key={item.id} title={item.label}>
+            <span>{item.icon}</span><small>{item.label}</small>
           </button>
         ))}
       </nav>
@@ -704,6 +718,10 @@ function App() {
 
           {/* Other views (unchanged) */}
           {active === 'clipboard' && <ClipboardWorkspace onSendToComposer={copyPromptToComposer} setNotice={setNotice} />}
+          {active === 'agents' && <ObjectRegistryPage kind="agents" onAction={setNotice} onCopyToComposer={copyPromptToComposer} />}
+          {active === 'models' && <ObjectRegistryPage kind="models" onAction={setNotice} onCopyToComposer={copyPromptToComposer} />}
+          {active === 'plugins' && <ObjectRegistryPage kind="plugins" onAction={setNotice} onCopyToComposer={copyPromptToComposer} />}
+          {active === 'workflows' && <ObjectRegistryPage kind="workflows" onAction={setNotice} onCopyToComposer={copyPromptToComposer} />}
           {active === 'apis' && <ApiShelfPanel setNotice={setNotice} />}
           {active === 'memory' && <SearchPanel title="Memory search" modeToggle onSearch={(q,m)=>topOfMindApi.searchMemory(q,m==='vector'?'vector':undefined)} />}
           {active === 'files' && <SearchPanel title="File cache search" onSearch={(q)=>topOfMindApi.searchFileCache(q)} />}

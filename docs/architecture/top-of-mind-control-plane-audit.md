@@ -84,3 +84,17 @@ Deferred follow-up:
 - Wire real remote agent responses into `agent_arrivals` instead of using the UI simulation helper.
 - Add conductor-side duplicate suppression and contradiction flagging for `response_proposals`.
 - Add persisted trigger rules and suppression windows for first-message-of-day, post-reboot, post-merge, contradiction-found, and project/file-change re-entry events.
+
+## TypingMind-inspired shell guidance implemented
+
+- Added a reusable dense registry/list/detail pattern for first-class objects instead of continuing to add single-purpose modals into `main.jsx`.
+- Expanded the global rail to stable named navigation for Chats, Agents, Prompts, Plugins, Models, Clipboard, APIs, Knowledge Base, Workflows, Operations, and Settings.
+- Added first-class object pages for Agents, Models, Plugins, and Workflows using a four-zone pattern: global rail, contextual category/provider sidebar, searchable main list, and detail inspector.
+- Preserved the distinction between models as capability providers and agents as configured working identities.
+- Kept visual density compact with restrained cards, status badges, toggles, and inspector metadata instead of oversized dashboards.
+
+Deferred follow-up:
+
+- Move seeded agent/model/plugin/workflow records to durable backend registries.
+- Apply the same reusable registry component to prompts and APIs after their backend registries are complete.
+- Add per-message model/tool/plugin selectors to the composer backed by the selected registry records.
