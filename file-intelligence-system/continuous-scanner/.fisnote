@@ -1,0 +1,29 @@
+---
+fis_schema: "folder-index.v1"
+folder_id: "FLD-20260717-c400830b"
+folder: "GitHub\David-OS-tagger-publish\file-intelligence-system\continuous-scanner"
+folder_class: "project"
+confidence: 0.6
+dependency_risk: 0.333
+dominant_family: "code"
+dominant_ratio: 0.6
+file_count: 5
+classified_at: "2026-07-17T20:45:41"
+allowed_actions: ["index", "rename_internal", "subfolder_sort", "archive_exports"]
+suggested_name: "continuous-scanner"
+system_markers: ["requirements.txt"]
+---
+
+# FIS Folder Index: continuous-scanner
+
+**Class**: project  ·  **Confidence**: 60%  ·  **Files**: 5  ·  **Dominant**: code (60%)
+
+## Allowed actions
+- index
+- rename_internal
+- subfolder_sort
+- archive_exports
+
+**Suggested name**: `continuous-scanner`  (not applied — review before use)
+
+<!-- FIS folder-index.v1: parseable note; safe to regenerate. -->

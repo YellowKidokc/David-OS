@@ -1,0 +1,28 @@
+---
+fis_schema: "folder-index.v1"
+folder_id: "FLD-20260717-96cbd772"
+folder: "GitHub\David-OS-tagger-publish\api\config"
+folder_class: "project"
+confidence: 0.6
+dependency_risk: 0.0
+dominant_family: "code"
+dominant_ratio: 1.0
+file_count: 2
+classified_at: "2026-07-17T20:45:36"
+allowed_actions: ["index", "rename_internal", "subfolder_sort", "archive_exports"]
+suggested_name: "config"
+---
+
+# FIS Folder Index: config
+
+**Class**: project  ·  **Confidence**: 60%  ·  **Files**: 2  ·  **Dominant**: code (100%)
+
+## Allowed actions
+- index
+- rename_internal
+- subfolder_sort
+- archive_exports
+
+**Suggested name**: `config`  (not applied — review before use)
+
+<!-- FIS folder-index.v1: parseable note; safe to regenerate. -->
