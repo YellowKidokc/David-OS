@@ -1,0 +1,28 @@
+---
+fis_schema: "folder-index.v1"
+folder_id: "FLD-20260717-46b7b8da"
+folder: "GitHub\David-OS-tagger-publish\tagger"
+folder_class: "project"
+confidence: 0.6
+dependency_risk: 0.0
+dominant_family: "text"
+dominant_ratio: 0.571
+file_count: 7
+classified_at: "2026-07-17T20:45:43"
+allowed_actions: ["index", "rename_internal", "subfolder_sort", "archive_exports"]
+suggested_name: "tagger"
+---
+
+# FIS Folder Index: tagger
+
+**Class**: project  ·  **Confidence**: 60%  ·  **Files**: 7  ·  **Dominant**: text (57%)
+
+## Allowed actions
+- index
+- rename_internal
+- subfolder_sort
+- archive_exports
+
+**Suggested name**: `tagger`  (not applied — review before use)
+
+<!-- FIS folder-index.v1: parseable note; safe to regenerate. -->
