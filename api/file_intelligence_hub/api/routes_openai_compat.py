@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from file_intelligence_hub.storage.db import Database
+from file_intelligence_hub.storage.memory_repo import MemoryRepo
 from file_intelligence_hub.storage.top_of_mind_repo import TopOfMindRepo
 
 DEFAULT_DB_PATH = Path(os.environ.get("FIHUB_DB_PATH", ".data/file-intelligence-hub.sqlite3"))
@@ -157,6 +158,11 @@ def _repo() -> TopOfMindRepo:
     return TopOfMindRepo(db.conn)
 
 
+def _memory_repo() -> MemoryRepo:
+    db = Database(DEFAULT_DB_PATH)
+    return MemoryRepo(db.conn)
+
+
 def _content_to_text(content: str | list[dict[str, Any]] | None) -> str:
     if content is None:
         return ""
@@ -248,6 +254,84 @@ def _add_persona_system_message(messages: list[ChatMessage], persona: Persona) -
     return [ChatMessage(role="system", content=f"{persona.instructions}\n\n{safety}"), *messages]
 
 
+def _requested_provider(metadata: dict[str, Any] | None) -> str:
+    provider = str((metadata or {}).get("provider") or "").strip().lower()
+    if provider in {"deepseek", "ollama-local", "ollama", "openai", "router-placeholder"}:
+        return "ollama-local" if provider == "ollama" else provider
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        return "deepseek"
+    return "router-placeholder"
+
+
+def _truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
+def _knowledge_query(messages: list[ChatMessage], metadata: dict[str, Any]) -> str:
+    value = metadata.get("knowledge_query")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return _latest_user_message(messages)
+
+
+def _retrieve_knowledge_items(messages: list[ChatMessage], metadata: dict[str, Any]) -> list[dict[str, Any]]:
+    if not _truthy(metadata.get("use_knowledge_bank")):
+        return []
+    query = _knowledge_query(messages, metadata).strip()
+    if not query:
+        return []
+    mode = str(metadata.get("knowledge_mode") or "text").strip().lower()
+    limit_raw = metadata.get("knowledge_limit", 5)
+    try:
+        limit = int(limit_raw)
+    except (TypeError, ValueError):
+        limit = 5
+    limit = max(1, min(limit, 10))
+    repo = _memory_repo()
+    if mode == "vector":
+        return repo.vector_search(query, limit=limit)
+    return repo.search(query, limit=limit)
+
+
+def _knowledge_system_message(items: list[dict[str, Any]]) -> ChatMessage | None:
+    if not items:
+        return None
+    lines = [
+        "Use the following Knowledge Bank context only when relevant. Cite item titles or source metadata when you rely on them.",
+    ]
+    for index, item in enumerate(items, start=1):
+        body = str(item.get("body") or "").replace("\n", " ").strip()
+        if len(body) > 500:
+            body = body[:497] + "..."
+        tags = ", ".join(str(tag) for tag in (item.get("tags") or []))
+        source = item.get("source") or "memory"
+        folder = item.get("folder") or "Memory"
+        lines.append(
+            f"[{index}] {item.get('title') or 'Untitled'} | "
+            f"source={source} | folder={folder} | tags={tags} | body={body}"
+        )
+    return ChatMessage(role="system", content="\n".join(lines))
+
+
+def _knowledge_metadata(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    payload = []
+    for item in items:
+        payload.append({
+            "id": item.get("id"),
+            "title": item.get("title"),
+            "source": item.get("source"),
+            "folder": item.get("folder"),
+            "tags": item.get("tags") or [],
+            "score": item.get("score"),
+            "metadata": item.get("metadata") or {},
+        })
+    return payload
+
+
 def _response_input_to_messages(request: ResponsesRequest) -> list[ChatMessage]:
     messages: list[ChatMessage] = []
     if request.instructions:
@@ -268,7 +352,12 @@ def _build_router_reply(
     model: str,
     request_metadata: dict[str, Any] | None = None,
 ) -> tuple[str, dict[str, Any]]:
+    request_metadata = request_metadata or {}
+    knowledge_items = _retrieve_knowledge_items(messages, request_metadata)
     persona, routed_messages, route_reason = _select_persona(messages, request_metadata)
+    knowledge_message = _knowledge_system_message(knowledge_items)
+    if knowledge_message:
+        routed_messages = [knowledge_message, *routed_messages]
     prompt = _latest_user_message(messages)
     repo = _repo()
     repo.upsert_source(
@@ -290,18 +379,20 @@ def _build_router_reply(
             "persona": persona.id,
             "persona_label": persona.label,
             "route_reason": route_reason,
-            "request_metadata": request_metadata or {},
+            "request_metadata": request_metadata,
             "messages": [message.model_dump() for message in messages],
         },
     )
+    requested_provider = _requested_provider(request_metadata)
     provider_metadata: dict[str, Any] = {
-        "provider": "router-placeholder",
+        "provider": requested_provider,
         "persona": persona.id,
         "persona_label": persona.label,
         "route_reason": route_reason,
+        "knowledge_items": _knowledge_metadata(knowledge_items),
     }
     content = ""
-    if os.environ.get("DEEPSEEK_API_KEY"):
+    if requested_provider == "deepseek" and os.environ.get("DEEPSEEK_API_KEY"):
         try:
             content = _call_deepseek(routed_messages)
             provider_metadata = {
@@ -310,9 +401,14 @@ def _build_router_reply(
                 "persona": persona.id,
                 "persona_label": persona.label,
                 "route_reason": route_reason,
+                "knowledge_items": _knowledge_metadata(knowledge_items),
             }
         except RuntimeError as exc:
-            provider_metadata = {"provider": "deepseek", "error": str(exc)}
+            provider_metadata = {
+                "provider": "deepseek",
+                "error": str(exc),
+                "knowledge_items": _knowledge_metadata(knowledge_items),
+            }
             content = (
                 "Top of Mind router received the Mattermost request, but DeepSeek forwarding failed. "
                 f"Router error: {exc}"
