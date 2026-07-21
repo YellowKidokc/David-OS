@@ -2,3 +2,12 @@ tools/prompt-launcher/.playwright-profile/
 tools/prompt-launcher/node_modules/
 tools/prompt-launcher/research_exports/
 tools/prompt-launcher/config.local.json
+
+# Python/test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local File Intelligence Hub runtime state
+api/.data/*.sqlite3
+api/.data/*.sqlite3-*

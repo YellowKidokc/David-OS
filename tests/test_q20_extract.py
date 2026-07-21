@@ -16,6 +16,7 @@ def test_q20_extract_preserves_questions_and_misc(tmp_path: Path) -> None:
     ws.append(["id", "question", "category", "answer_type", "choices", "notes"])
     ws.append(["Q01", "Who owns this folder?", "WHO", "text", "", "ask David if unclear"])
     ws.append(["loose", "review this note", "", "", "", "not a question"])
+    ws.append([None, "blank first column note", "", "", "", "must not crash read_only EmptyCell handling"])
     ws2 = wb.create_sheet("Notes")
     ws2["A1"] = "Accumulated notes"
     ws2["B2"] = "Keep this verbatim"
@@ -29,5 +30,8 @@ def test_q20_extract_preserves_questions_and_misc(tmp_path: Path) -> None:
     assert data["questions"][0]["auto_answerable"] is None
     assert data["questions"][0]["scan_source"] is None
     assert data["questions"][0]["id"] == "Q01"
-    assert "Keep this verbatim" in outputs["misc_md"].read_text(encoding="utf-8")
+    misc_text = outputs["misc_md"].read_text(encoding="utf-8")
+    assert "Keep this verbatim" in misc_text
+    assert "review this note" in misc_text
+    assert "blank first column note" in misc_text
     assert "Who owns this folder?" in outputs["bank_md"].read_text(encoding="utf-8")

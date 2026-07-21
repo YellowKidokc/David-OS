@@ -1,5 +1,5 @@
 """Purpose: Extract the 20 Questions workbook into reviewable Markdown and JSON.
-Date: 2026-07-08 | Author: codex | Status: TESTED via pytest fixture workbook.
+Date: 2026-07-08 | Author: codex | Status: TESTED via Gate 0 review pytest fixture run.
 
 This Task 0 utility is intentionally extraction-only. It does not decide which
 questions are auto-answerable and does not infer scan sources; those fields stay
@@ -68,9 +68,10 @@ def _looks_like_question(values: list[str], headers: dict[str, int]) -> bool:
         return False
     id_fields = ("id", "question_id", "qid", "q")
     if any(field in headers for field in id_fields):
+        # An id column exists: it is authoritative. Rows whose id does not
+        # look like a question id are misc, even if other cells have text.
         id_value = next((values[headers[field]] for field in id_fields if field in headers and headers[field] < len(values)), "")
-        if QUESTION_ID_RE.search(id_value) or re.fullmatch(r"0*([1-9]|1\d|20)", id_value or ""):
-            return True
+        return bool(QUESTION_ID_RE.search(id_value) or re.fullmatch(r"0*([1-9]|1\d|20)", id_value or ""))
     question_fields = ("question", "text", "prompt")
     if any(field in headers and headers[field] < len(values) and values[headers[field]] for field in question_fields):
         return True
@@ -130,16 +131,16 @@ def extract_workbook(workbook_path: Path) -> tuple[list[dict[str, Any]], list[di
         rows = list(ws.iter_rows())
         header_values = _row_values(rows[0]) if rows else []
         headers = _header_map(header_values)
-        for row in rows:
+        for row_idx, row in enumerate(rows, start=1):
             values = _row_values(row)
             if not any(values):
                 continue
             stats["rows"] += 1
-            row_cells = [CellRecord(ws.title, cell.coordinate, cell.row, cell.column, _stringify(cell.value)) for cell in row if _stringify(cell.value)]
+            row_cells = [CellRecord(ws.title, getattr(cell, "coordinate", f"R{row_idx}C{col_idx}"), row_idx, col_idx, _stringify(cell.value)) for col_idx, cell in enumerate(row, start=1) if _stringify(cell.value)]
             cells.extend(row_cells)
             stats["non_empty_cells"] += len(row_cells)
-            if row[0].row == 1 and headers:
-                misc_rows.append({"sheet": ws.title, "row": row[0].row, "cells": [cell.__dict__ for cell in row_cells], "reason": "header"})
+            if row_idx == 1 and headers:
+                misc_rows.append({"sheet": ws.title, "row": row_idx, "cells": [cell.__dict__ for cell in row_cells], "reason": "header"})
                 continue
             if _looks_like_question(values, headers):
                 question_counter += 1
@@ -163,10 +164,10 @@ def extract_workbook(workbook_path: Path) -> tuple[list[dict[str, Any]], list[di
                     "auto_answerable": None,
                     "scan_source": None,
                     "notes": "\n".join(notes_parts),
-                    "source": {"sheet": ws.title, "row": row[0].row, "cells": [cell.__dict__ for cell in row_cells]},
+                    "source": {"sheet": ws.title, "row": row_idx, "cells": [cell.__dict__ for cell in row_cells]},
                 })
             else:
-                misc_rows.append({"sheet": ws.title, "row": row[0].row, "cells": [cell.__dict__ for cell in row_cells], "reason": "not clearly a question"})
+                misc_rows.append({"sheet": ws.title, "row": row_idx, "cells": [cell.__dict__ for cell in row_cells], "reason": "not clearly a question"})
     stats["questions"] = len(questions)
     stats["misc_items"] = len(misc_rows)
     return questions, misc_rows, cells, stats
