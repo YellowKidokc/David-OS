@@ -1,7 +1,10 @@
 """Minimal FastAPI app factory for local development."""
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from file_intelligence_hub.api.security import ApiTokenMiddleware
 
@@ -44,6 +47,21 @@ def create_app() -> FastAPI:
     app.include_router(semantic_router)
     app.include_router(top_of_mind_router)
     app.add_middleware(ApiTokenMiddleware)
+    # Browser clients (the desk app on Vite/Cloudflare) are cross-origin, so
+    # without CORS headers every fetch is silently blocked by the browser.
+    # Added last so it wraps the token middleware and 401s carry CORS headers.
+    # Restrict origins in LAN/server mode with FIHUB_CORS_ORIGINS=<comma-separated>.
+    origins = [
+        origin.strip()
+        for origin in os.environ.get("FIHUB_CORS_ORIGINS", "*").split(",")
+        if origin.strip()
+    ]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     return app
 
 
