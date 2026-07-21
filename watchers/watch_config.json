@@ -1,0 +1,17 @@
+{
+  "source_node_id": "desktop-watcher",
+  "hub_url": "http://127.0.0.1:10000",
+  "hub_timeout_seconds": 2,
+  "scan_interval_seconds": 300,
+  "queue_file": "watchers/runtime/control_plane_queue.jsonl",
+  "ignore_globs": [
+    "*/.git/*",
+    "*/node_modules/*",
+    "*/__pycache__/*",
+    "*/.venv/*",
+    "*.tmp"
+  ],
+  "roots": [
+    {"path": "watchers/demo-root", "enabled": true, "recursive": true}
+  ]
+}
